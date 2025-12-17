@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Applicazione Orientamento{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<nav class="top-navbar">
+    <div class="nav-left">
+        <div class="nav-brand">
+            <img src="{{ url_for('static', filename='images/univr_logo.jpg') }}" alt="Logo">
+            <span>Orientamento</span>
+        </div>
+
+        <div class="nav-links-container">
+            <a href="{{ url_for('attivita') }}" class="{{ 'active' if request.endpoint == 'attivita' else '' }}">Attività</a>
+        
+            {% if session.get('ruolo') == 'admin' %}
+            <a href="{{ url_for('lista_referenti') }}" class="{{ 'active' if request.endpoint == 'lista_referenti' else '' }}">Referenti</a>
+            {% endif %}
+            {% if struttura != "Ateneo di Verona" or session.get('ruolo') == 'admin' %}
+            <a href="{{ url_for('personale_universitario') }}" class="{{ 'active' if request.endpoint == 'personale_universitario' else '' }}">Personale</a>
+            <a href="{{ url_for('scuole') }}" class="{{ 'active' if request.endpoint == 'scuole' else '' }}">Scuole</a>
+            <a href="{{ url_for('indirizzi_scolastici') }}" class="{{ 'active' if request.endpoint == 'indirizzi_scolastici' else '' }}">Indirizzi</a>
+            {% endif %}
+
+            <a href="{{ url_for('resoconto') }}" class="{{ 'active' if request.endpoint == 'resoconto' else '' }}">Resoconto</a>
+        </div>
+    </div>
+
+    <div class="nav-right">
+        <span class="user-structure">{{ struttura }}</span>
+        <form method="POST" action="{{ url_for('logout') }}" style="display: inline;">
+            <button type="submit" class="logout-btn">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,402 @@
+{% extends "navbar.html" %}
+
+{% block title %}Resoconto Dipartimento{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/resoconto.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <div class="dashboard-header">
+        <h1 class="page-title">Resoconto Generale - {{ struttura }}</h1>
+
+        <div class="filters-toolbar">
+
+            <form method="GET" class="filter-item">
+                <label for="year"><i class="far fa-calendar-alt"></i> Anno:</label>
+                <select name="year" id="year" onchange="this.form.submit()" class="modern-select">
+                    <option value="storico" {% if selected_year == 'storico' %}selected{% endif %}>Storico Completo</option>
+                    {% for y in years_list %}
+                    <option value="{{ y }}" {% if selected_year|int == y %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+
+                {% if dip_filter %}
+                <input type="hidden" name="dip_filter" value="{{ dip_filter }}">
+                {% endif %}
+            </form>
+
+            {% if struttura == 'Ateneo di Verona' %}
+            <div class="filter-divider"></div>
+            <form method="GET" class="filter-item">
+                <label for="dip_filter"><i class="fas fa-building"></i> Dipartimento:</label>
+                <select name="dip_filter" id="dip_filter" onchange="this.form.submit()" class="modern-select">
+                    <option value="Ateneo di Verona" {% if not dip_filter or dip_filter == 'Ateneo di Verona' %}selected{% endif %}>Ateneo di Verona (Tutti)</option>
+                    {% for d in all_dips %}
+                        {% if d != 'Ateneo di Verona' %}
+                            <option value="{{ d }}" {% if dip_filter == d %}selected{% endif %}>{{ d }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+
+                <input type="hidden" name="year" value="{{ selected_year }}">
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-calendar-check"></i></div>
+            <div class="kpi-value">{{ kpi.attivita }}</div>
+            <div class="kpi-label">Totale Attività</div>
+            <div class="kpi-sublabel">({{ kpi.svolte }} Svolte, {{ kpi.programmate }} Programmate)</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-users"></i></div>
+            <div class="kpi-value">{{ kpi.studenti }}</div>
+            <div class="kpi-label">Studenti Totali</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+            <div class="kpi-value">{{ kpi.ore }}</div>
+            <div class="kpi-label">Ore Erogate</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-school"></i></div>
+            <div class="kpi-value">{{ kpi.scuole }}</div>
+            <div class="kpi-label">Scuole</div>
+        </div>
+         <div class="kpi-card">
+            <div class="kpi-icon"><i class="fas fa-graduation-cap"></i></div>
+            <div class="kpi-value">{{ kpi.indirizzi }}</div>
+            <div class="kpi-label">Indirizzi</div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-container full-width">
+            <div class="chart-header-flex">
+                <h3>Andamento Temporale</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" onclick="toggleChart(this, 'trend', 'students')">Studenti</button>
+                    <button class="toggle-btn" onclick="toggleChart(this, 'trend', 'activities')">Attività</button>
+                </div>
+            </div>
+            <div class="chart-wrapper-wide">
+                <canvas id="chartTrend"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-container full-width">
+            <div class="chart-header-flex">
+                <h3>Scuole</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" onclick="toggleChart(this, 'school', 'students')">Studenti</button>
+                    <button class="toggle-btn" onclick="toggleChart(this, 'school', 'activities')">Attività</button>
+                </div>
+            </div>
+            <div class="chart-wrapper-wide">
+                <canvas id="chartSchools"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-container full-width">
+            <div class="chart-header-flex">
+                <h3>Indirizzi</h3>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" onclick="toggleChart(this, 'address', 'students')">Studenti</button>
+                    <button class="toggle-btn" onclick="toggleChart(this, 'address', 'activities')">Attività</button>
+                </div>
+            </div>
+            <div class="chart-wrapper-wide">
+                <canvas id="chartAddresses"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-container narrow centered">
+             <h3>Distribuzione Genere</h3>
+             <div class="chart-wrapper">
+                <canvas id="chartSesso"></canvas>
+             </div>
+        </div>
+    </div>
+
+    {% if struttura == 'Ateneo di Verona' %}
+    <div class="charts-row" style="margin-top: 60px; border-top: 2px dashed #ccc; padding-top: 40px;">
+        <div class="chart-container full-width">
+            <h2 style="text-align: left; color: #1b5e20; margin-bottom: 30px;">Confronto Dipartimenti</h2>
+
+            <div style="margin-bottom: 50px;">
+                <h3>Studenti Raggiunti</h3>
+                <div class="chart-wrapper-wide">
+                    <canvas id="chartCompStud"></canvas>
+                </div>
+            </div>
+
+            <div>
+                <h3>Attività Organizzate</h3>
+                <div class="chart-wrapper-wide">
+                    <canvas id="chartCompAtt"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="analyzer-section">
+        <h2><i class="fas fa-chart-line"></i> Analisi Edizioni Attività</h2>
+        <div class="search-box">
+            <input type="text" id="activitySearch" placeholder="Cerca nome attività...">
+            <button id="searchBtn"><i class="fas fa-search"></i> Cerca</button>
+        </div>
+        <div id="searchResults" class="results-list"></div>
+        <button id="compareBtn" class="action-btn" style="display:none;">Confronta Selezionati</button>
+        <div class="chart-container full-width" id="compareContainer" style="display:none;">
+            <div class="chart-wrapper-tall">
+                <canvas id="chartCompare"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const rawData = {
+        trend: {{ chart_trend | tojson }},
+        school: {{ chart_scuole | tojson }},
+        address: {{ chart_indirizzi | tojson }}
+    };
+
+    const charts = {};
+
+    function getStudentDatasets(dataSource) {
+        const totals = dataSource.maschi.map((num, idx) => {
+            return num + dataSource.femmine[idx] + dataSource.nonspec[idx];
+        });
+
+        return [{
+            label: 'Totale Studenti',
+            data: totals,
+            backgroundColor: '#36a2eb',
+            borderColor: '#36a2eb',
+            borderWidth: 1
+        }];
+    }
+
+    function getActivityDataset(dataSource) {
+        return [{
+            label: 'N. Attività',
+            data: dataSource.attivita,
+            backgroundColor: 'rgba(27, 94, 32, 0.7)',
+            borderColor: '#1b5e20',
+            borderWidth: 1
+        }];
+    }
+
+    function renderDynamicChart(chartId, type, mode) {
+        const ctx = document.getElementById(chartId);
+        if (charts[chartId]) {
+            charts[chartId].destroy();
+        }
+
+        const source = rawData[type];
+        let datasets;
+
+        let options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 },
+                    grace: '10%',
+                    stacked: false
+                },
+                x: {
+                    stacked: false
+                }
+            }
+        };
+
+        if (mode === 'students') {
+            datasets = getStudentDatasets(source);
+        } else {
+            datasets = getActivityDataset(source);
+        }
+
+        charts[chartId] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: source.labels,
+                datasets: datasets
+            },
+            options: options
+        });
+    }
+
+    window.toggleChart = function(btn, type, mode) {
+        const group = btn.parentNode;
+        group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        let chartId;
+        if (type === 'trend') chartId = 'chartTrend';
+        else if (type === 'school') chartId = 'chartSchools';
+        else if (type === 'address') chartId = 'chartAddresses';
+
+        renderDynamicChart(chartId, type, mode);
+    };
+
+    renderDynamicChart('chartTrend', 'trend', 'students');
+    renderDynamicChart('chartSchools', 'school', 'students');
+    renderDynamicChart('chartAddresses', 'address', 'students');
+
+    const ctxSesso = document.getElementById('chartSesso');
+    new Chart(ctxSesso, {
+        type: 'doughnut',
+        data: {
+            labels: {{ chart_sesso_labels | tojson }},
+            datasets: [{
+                data: {{ chart_sesso | tojson }},
+                backgroundColor: ['#36a2eb', '#ff6384', '#c9cbcf']
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    {% if struttura == 'Ateneo di Verona' %}
+
+    const dataCompStudRaw = {{ chart_comp_stud_stacked | tojson }};
+
+    const totalsComp = dataCompStudRaw.maschi.map((num, idx) => {
+        return num + dataCompStudRaw.femmine[idx] + dataCompStudRaw.nonspec[idx];
+    });
+
+    const ctxCompStud = document.getElementById('chartCompStud');
+    new Chart(ctxCompStud, {
+        type: 'bar',
+        data: {
+            labels: dataCompStudRaw.labels,
+            datasets: [{
+                label: 'Totale Studenti',
+                data: totalsComp,
+                backgroundColor: '#36a2eb'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { stacked: false },
+                y: { stacked: false, beginAtZero: true, grace: '10%' }
+            }
+        }
+    });
+
+    const ctxCompAtt = document.getElementById('chartCompAtt');
+    const dataCompAtt = {{ chart_comp_att_line | tojson }};
+    new Chart(ctxCompAtt, {
+        type: 'bar',
+        data: {
+            labels: dataCompAtt.labels,
+            datasets: [{
+                label: 'N. Attività',
+                data: dataCompAtt.data,
+                backgroundColor: 'rgba(27, 94, 32, 0.7)',
+                borderColor: '#1b5e20',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1, precision: 0 },
+                    grace: '10%'
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    const searchInput = document.getElementById('activitySearch');
+    const searchBtn = document.getElementById('searchBtn');
+    const resultsDiv = document.getElementById('searchResults');
+    const compareBtn = document.getElementById('compareBtn');
+    const compareContainer = document.getElementById('compareContainer');
+    let compareChart = null;
+
+    searchBtn.addEventListener('click', async () => {
+        const q = searchInput.value;
+        if(q.length < 2) return;
+        const res = await fetch(`/api/cerca_attivita?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        resultsDiv.innerHTML = '';
+        if(data.length === 0) { resultsDiv.innerHTML = '<p>Nessuna attività trovata.</p>'; return; }
+        data.forEach(item => {
+            const div = document.createElement('div'); div.className = 'result-item';
+            div.innerHTML = `<input type="checkbox" value="${item.id}" id="cb_${item.id}"><label for="cb_${item.id}"><strong>${item.nome}</strong> <span class="date">(${item.data})</span></label>`;
+            resultsDiv.appendChild(div);
+        });
+        compareBtn.style.display = 'block';
+    });
+
+    compareBtn.addEventListener('click', async () => {
+        const checked = Array.from(document.querySelectorAll('#searchResults input:checked')).map(c => c.value);
+        if(checked.length < 1) {
+            resultsDiv.insertAdjacentHTML('afterbegin', '<div class="table-error error-visible">Seleziona almeno un\'edizione per il confronto.</div>');
+            setTimeout(() => { resultsDiv.querySelector('.table-error')?.remove(); }, 3000);
+            return;
+        }
+
+        const res = await fetch(`/api/confronta_edizioni?ids=${checked.join(',')}`);
+        const data = await res.json();
+
+        compareContainer.style.display = 'block';
+        const ctx = document.getElementById('chartCompare');
+
+        if(compareChart) compareChart.destroy();
+
+        const datasets = [{
+            label: 'Totale Studenti',
+            data: data.values,
+            backgroundColor: '#36a2eb'
+        }];
+
+        compareChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { stacked: false }, // Rimosso stack
+                    y: { stacked: false, beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grace: '10%' }
+                }
+            }
+        });
+        compareContainer.scrollIntoView({behavior: 'smooth'});
+    });
+</script>
+{% endblock %}

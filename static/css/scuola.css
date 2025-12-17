@@ -1,0 +1,141 @@
+.container {
+  padding: 20px;
+  max-width: 1000px;
+  margin: 20px auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th {
+  background-color: #388e3c;
+  color: white;
+  text-align: left;
+  padding: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  vertical-align: middle;
+}
+
+td a {
+  color: #2e7d32;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+td a:hover {
+  text-decoration: underline;
+}
+
+tr.selected {
+  background-color: #e8f5e9;
+}
+
+tr:hover {
+  cursor: pointer;
+  background-color: #f1f8e9;
+}
+
+.table-error {
+    color: #d32f2f;
+    font-size: 0.95rem;
+    margin-top: 15px;
+    padding: 10px 15px;
+    background-color: #ffebee;
+    border-radius: 6px;
+    border-left: 5px solid #d32f2f;
+    font-weight: 500;
+    text-align: center;
+}
+
+.error-hidden {
+    display: none;
+}
+
+.error-visible {
+    display: block;
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+button {
+  background-color: #1b5e20;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  background-color: #388e3c;
+}
+
+#cancella[data-confirming="true"] {
+    background-color: #c62828;
+    font-weight: bold;
+    animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+#cancella[data-confirming="true"]:hover {
+    background-color: #b71c1c;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  th, td {
+    font-size: 0.85rem;
+    padding: 6px;
+  }
+
+  button {
+    flex: 1;
+  }
+}

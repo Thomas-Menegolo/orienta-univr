@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Modifica' if modalita == 'modifica' else 'Nuova' }} Scuola</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/css/intlTelInput.css">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form_scuola.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+</head>
+<body>
+
+<div class="page-container">
+  <header class="form-header">
+    {% if return_to and return_id %}
+      <a href="{{ url_for(return_to, id_attivita=return_id|int) }}" class="back-btn">← Torna all'Attività</a>
+    {% elif return_to %}
+      <a href="{{ url_for(return_to) }}" class="back-btn">← Torna all'Attività</a>
+    {% else %}
+      <a href="{{ url_for('scuole') }}" class="back-btn">← Scuole</a>
+    {% endif %}
+    <h2>{{ 'Modifica' if modalita == 'modifica' else 'Nuova' }} Scuola</h2>
+  </header>
+
+  {% if error %}
+    <div class="error-message error-visible">
+        {{ error }}
+    </div>
+  {% endif %}
+
+  <form id="scuola-form" method="POST"
+        action="{{ url_for(request.endpoint, cm=scuola.codice_meccanografico if scuola else None, return_to=return_to, return_id=return_id) }}">
+
+    <section class="form-section">
+      <h3>Dati Scuola</h3>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Codice Meccanografico *</label>
+          <input type="text" name="codice_meccanografico" required
+                 pattern="[A-Z]{4}[0-9]{5}[A-Z]{1}"
+                 maxlength="10"
+                 oninput="this.value = this.value.toUpperCase()"
+                 title="Formato richiesto: 4 lettere, 5 numeri, 1 lettera (es. VRIS12345A)"
+                 value="{{ form_data.codice_meccanografico if form_data else (scuola.codice_meccanografico if scuola else '') }}"
+                 {% if modalita == 'modifica' %}readonly{% endif %}>
+        </div>
+        <div class="form-group half">
+          <label>Nome *</label>
+          <input type="text" name="nome" required maxlength="64"
+                 value="{{ form_data.nome if form_data else (scuola.nome if scuola else '') }}">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Email *</label>
+          <input type="email" name="email" required maxlength="64"
+                 value="{{ form_data.email if form_data else (scuola.email if scuola else '') }}">
+        </div>
+        <div class="form-group half">
+          <label>Numero Telefonico *</label>
+          <input id="phone" type="tel" name="phone_visible">
+          <input type="hidden" id="phone_hidden" name="numero_telefonico">
+        </div>
+      </div>
+    </section>
+
+    <section class="form-section">
+        <h3>Sede</h3>
+        <div class="form-row">
+          <div class="form-group flex-grow">
+            <label>Via *</label>
+            <input type="text" name="via" required maxlength="32"
+                   value="{{ form_data.via if form_data else (scuola.via if scuola else '') }}">
+          </div>
+           <div class="form-group" style="flex-basis: 100px;">
+            <label>Numero *</label>
+            <input type="number" name="numero_civico" required min="1"
+                   value="{{ form_data.numero_civico if form_data else (scuola.numero_civico if scuola else '') }}">
+          </div>
+        </div>
+         <div class="form-group">
+            <label>Comune *</label>
+            <input type="text" name="comune" required maxlength="64"
+                   value="{{ form_data.comune if form_data else (scuola.comune if scuola else '') }}">
+          </div>
+    </section>
+
+    <section class="form-section">
+        <h3>Dirigente</h3>
+         <div class="form-row">
+            <div class="form-group half">
+              <label>Nome Dirigente *</label>
+              <input type="text" name="dirigente_nome" required maxlength="64"
+                     value="{{ form_data.dirigente_nome if form_data else (scuola.info_personali_dirigente.nome if scuola else '') }}">
+            </div>
+             <div class="form-group half">
+              <label>Cognome Dirigente *</label>
+              <input type="text" name="dirigente_cognome" required maxlength="64"
+                     value="{{ form_data.dirigente_cognome if form_data else (scuola.info_personali_dirigente.cognome if scuola else '') }}">
+            </div>
+         </div>
+         <div class="form-group">
+            <label>Email Dirigente *</label>
+            <input type="email" name="dirigente_email" required maxlength="64"
+                   value="{{ form_data.dirigente_email if form_data else (scuola.info_personali_dirigente.email if scuola else '') }}">
+         </div>
+    </section>
+
+    <div class="form-footer">
+      <button type="submit" class="btn-submit">{{ 'Salva Modifiche' if modalita == 'modifica' else 'Inserisci Scuola' }}</button>
+    </div>
+  </form>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/utils.js"></script>
+<script>
+  const phoneInput = document.querySelector("#phone");
+  const hiddenInput = document.querySelector("#phone_hidden");
+  const form = document.querySelector("#scuola-form");
+
+  const iti = window.intlTelInput(phoneInput, {
+      utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/utils.js",
+      initialCountry: "it",
+      preferredCountries: ['it', 'de', 'fr', 'es', 'ch', 'at', 'gb', 'us']
+  });
+
+  const initialNumber = "{{ (form_data.numero_telefonico if form_data else (scuola.numero_telefonico if scuola else '')) | safe }}";
+  if (initialNumber) {
+      iti.setNumber(initialNumber);
+  }
+
+  form.addEventListener('submit', (e) => {
+      if (iti.isValidNumber()) {
+          hiddenInput.value = iti.getNumber();
+      } else {
+          if (!phoneInput.value.trim()) {
+               hiddenInput.value = '';
+          } else {
+               hiddenInput.value = 'INVALID';
+          }
+      }
+  });
+</script>
+
+</body>
+</html>

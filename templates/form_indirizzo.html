@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Indirizzo Scolastico</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form_indirizzo.css') }}">
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+</head>
+<body>
+
+<div class="page-container">
+  <header class="form-header">
+    {% if return_to and return_id %}
+      <a href="{{ url_for(return_to, id_attivita=return_id|int) }}" class="back-btn">← Torna all'Attività</a>
+    {% elif return_to %}
+      <a href="{{ url_for(return_to) }}" class="back-btn">← Torna all'Attività</a>
+    {% else %}
+      <a href="{{ url_for('indirizzi_scolastici') }}" class="back-btn">← Indirizzi</a>
+    {% endif %}
+    <h2>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Indirizzo</h2>
+  </header>
+
+  {% if error %}
+    <div class="error-message error-visible">
+        {{ error }}
+    </div>
+  {% endif %}
+
+  <form id="indirizzo-form" method="POST"
+        action="{{ url_for(request.endpoint, cm=indirizzo_data.codice_meccanografico if indirizzo_data else None, indirizzo=indirizzo_data.indirizzo if indirizzo_data else None, return_to=return_to, return_id=return_id) }}">
+
+    <section class="form-section">
+      <h3>Dati Indirizzo</h3>
+      <div class="form-group">
+        <label>Scuola *</label>
+        <select name="codice_meccanografico" required
+                {% if modalita == 'modifica' %}disabled{% endif %}>
+            <option value="">-- Seleziona Scuola --</option>
+            {% for s in scuole_opt %}
+            {% set selected_cm = (form_data.codice_meccanografico if form_data else (indirizzo_data.codice_meccanografico if indirizzo_data else '')) %}
+            <option value="{{ s.id }}" {% if s.id == selected_cm %}selected{% endif %}>
+                {{ s.text }}
+            </option>
+            {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Indirizzo *</label>
+        <input type="text" name="indirizzo" required maxlength="64"
+               value="{{ form_data.indirizzo if form_data else (indirizzo_data.indirizzo if indirizzo_data else '') }}"
+               {% if modalita == 'modifica' %}readonly{% endif %}>
+      </div>
+    </section>
+
+    <section class="form-section">
+        <h3>Referente</h3>
+         <div class="form-row">
+            <div class="form-group half">
+              <label>Nome Referente *</label>
+              <input type="text" name="referente_nome" required maxlength="32"
+                     value="{{ form_data.referente_nome if form_data else (indirizzo_data.info_personali_referente.nome if indirizzo_data else '') }}">
+            </div>
+             <div class="form-group half">
+              <label>Cognome Referente *</label>
+              <input type="text" name="referente_cognome" required maxlength="32"
+                     value="{{ form_data.referente_cognome if form_data else (indirizzo_data.info_personali_referente.cognome if indirizzo_data else '') }}">
+            </div>
+         </div>
+         <div class="form-group">
+            <label>Email Referente *</label>
+            <input type="email" name="referente_email" required maxlength="64"
+                   value="{{ form_data.referente_email if form_data else (indirizzo_data.info_personali_referente.email if indirizzo_data else '') }}">
+         </div>
+    </section>
+
+    <div class="form-footer">
+      <button type="submit" class="btn-submit">{{ 'Salva Modifiche' if modalita == 'modifica' else 'Inserisci Indirizzo' }}</button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

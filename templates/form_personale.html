@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Personale</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form_personale.css') }}">
+
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+</head>
+<body>
+
+<div class="page-container">
+
+  <header class="form-header">
+
+    {% if return_to and return_id %}
+      <a href="{{ url_for(return_to, id_attivita=return_id|int) }}" class="back-btn">← Torna all'Attività</a>
+    {% elif return_to %}
+      <a href="{{ url_for(return_to) }}" class="back-btn">← Torna all'Attività</a>
+    {% else %}
+      <a href="{{ url_for('personale_universitario') }}" class="back-btn">← Personale</a>
+    {% endif %}
+
+    <h2>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Personale</h2>
+  </header>
+
+  {% if error %}
+    <div class="error-message error-visible">
+        {{ error }}
+    </div>
+  {% endif %}
+
+  <form id="personale-form" method="POST"
+        action="{{ url_for(request.endpoint, email=personale.email if personale else None, return_to=return_to, return_id=return_id) }}">
+
+    <section class="form-section">
+      <h3>Informazioni Anagrafiche</h3>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Email *</label>
+          <input type="email" name="email" required maxlength="64"
+                 value="{{ form_data.email if form_data else (personale.email if personale else '') }}"
+                 {% if modalita == 'modifica' %}readonly{% endif %}>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Nome *</label>
+          <input type="text" name="nome" required maxlength="32"
+                 value="{{ form_data.nome if form_data else (personale.nome if personale else '') }}">
+        </div>
+        <div class="form-group half">
+          <label>Cognome *</label>
+          <input type="text" name="cognome" required maxlength="32"
+                 value="{{ form_data.cognome if form_data else (personale.cognome if personale else '') }}">
+        </div>
+      </div>
+    </section>
+
+    <div class="form-footer">
+      <button type="submit" class="btn-submit">{{ 'Salva Modifiche' if modalita == 'modifica' else 'Inserisci Personale' }}</button>
+    </div>
+  </form>
+</div>
+
+</body>
+</html>

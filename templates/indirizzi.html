@@ -1,0 +1,163 @@
+{% extends "navbar.html" %}
+
+{% block title %}Indirizzi Scolastici{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/indirizzi.css') }}">
+{% endblock %}
+
+
+{% block content %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Codice Meccanografico</th>
+        <th>Scuola</th>
+        <th>Indirizzo</th>
+        <th>Referente</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ind in indirizzi_list %}
+      <tr data-cm="{{ ind.codice_meccanografico }}" data-indirizzo="{{ ind.indirizzo }}">
+        <td>{{ ind.codice_meccanografico }}</td>
+        <td>{{ ind.scuola.nome }}</td> <td>{{ ind.indirizzo }}</td>
+        <td>{{ ind.info_personali_referente.nome }} {{ ind.info_personali_referente.cognome }} - {{ ind.info_personali_referente.email }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 20px; color: #777;">
+          Nessun indirizzo trovato nel database.
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div id="table-error-msg" class="table-error error-hidden">
+  </div>
+
+
+<div class="buttons">
+  <button type="button" id="inserisci">Inserisci</button>
+  <button type="button" id="modifica" disabled>Modifica</button>
+  <button type="button" id="cancella" disabled>Cancella</button>
+</div>
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const table = document.querySelector('table tbody');
+    const btnModifica = document.getElementById('modifica');
+    const btnCancella = document.getElementById('cancella');
+    const btnInserisci = document.getElementById('inserisci');
+    const errorMsg = document.getElementById('table-error-msg');
+    
+    let selectedRow = null;
+    let selectedCM = null; 
+    let selectedIndirizzo = null;
+
+    function showErrorMessage(message) {
+        errorMsg.textContent = message;
+        errorMsg.classList.remove('error-hidden');
+        errorMsg.classList.add('error-visible');
+    }
+
+    function hideErrorMessage() {
+        errorMsg.classList.add('error-hidden');
+        errorMsg.classList.remove('error-visible');
+        errorMsg.textContent = '';
+    }
+
+    table.addEventListener('click', (e) => {
+        const row = e.target.closest('tr');
+        if (!row || !row.dataset.cm) return;
+
+        hideErrorMessage(); 
+
+        if (selectedRow) {
+            selectedRow.classList.remove('selected');
+        }
+
+        if (selectedRow === row) {
+            selectedRow = null;
+            selectedCM = null;
+            selectedIndirizzo = null;
+            btnModifica.disabled = true;
+            btnCancella.disabled = true;
+        } else {
+            selectedRow = row;
+            selectedRow.classList.add('selected');
+            selectedCM = row.dataset.cm;
+            selectedIndirizzo = row.dataset.indirizzo;
+            btnModifica.disabled = false;
+            btnCancella.disabled = false;
+        }
+        
+        btnCancella.dataset.confirming = 'false';
+        btnCancella.textContent = 'Cancella';
+    });
+
+    btnInserisci.addEventListener('click', () => {
+        window.location.href = "{{ url_for('inserisci_indirizzo') }}";
+    });
+
+    btnModifica.addEventListener('click', () => {
+        if (!selectedCM || !selectedIndirizzo) {
+            showErrorMessage('Nessun indirizzo selezionato. Clicca su una riga per modificarlo.');
+            return;
+        }
+
+        window.location.href = `/indirizzi/modifica/${selectedCM}/${encodeURIComponent(selectedIndirizzo)}`;
+    });
+
+    btnCancella.addEventListener('click', async () => {
+        if (!selectedCM || !selectedIndirizzo) {
+            showErrorMessage('Nessun indirizzo selezionato. Clicca su una riga per cancellarlo.');
+            return;
+        }
+
+        if (btnCancella.dataset.confirming !== 'true') {
+            btnCancella.dataset.confirming = 'true';
+            btnCancella.textContent = 'Confermi?';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/indirizzi/cancella/${selectedCM}/${encodeURIComponent(selectedIndirizzo)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                selectedRow.remove();
+                selectedRow = null;
+                selectedCM = null;
+                selectedIndirizzo = null;
+                btnModifica.disabled = true;
+                btnCancella.disabled = true;
+                hideErrorMessage();
+            } else {
+                showErrorMessage(result.error || 'Errore sconosciuto.');
+            }
+
+        } catch (error) {
+            showErrorMessage('Errore di connessione con il server.');
+        } finally {
+            btnCancella.dataset.confirming = 'false';
+            btnCancella.textContent = 'Cancella';
+        }
+    });
+
+});
+</script>
+{% endblock %}

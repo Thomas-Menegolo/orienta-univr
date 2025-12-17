@@ -1,0 +1,205 @@
+{% extends "navbar.html" %}
+
+{% block title %}Attività - Orientamento{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/attivita.css') }}">
+{% endblock %}
+
+{% block content %}
+  <nav class="sub-navbar">
+      <a href="#" id="storico-tab" class="active">Storico</a>
+      <a href="#" id="programmate-tab">Programmate</a>
+  </nav>
+
+  <div class="table-wrapper">
+      <table id="tabella-attività">
+          <thead>
+              <tr>
+                  <th>Titolo</th>
+                  <th>Data inizio</th>
+                  <th>Data fine</th>
+              </tr>
+          </thead>
+          <tbody>
+              </tbody>
+      </table>
+  </div>
+
+  <div id="table-error-message" class="table-error error-hidden"></div>
+
+  <div class="buttons">
+      {% if struttura != 'Ateneo di Verona' or session.get('ruolo') == 'admin' %}
+          <button id="inserisci">Inserisci</button>
+          <button id="modifica" disabled>Modifica</button>
+          <button id="cancella" class="btn-inline-confirm" disabled>Cancella</button>
+      {% endif %}
+
+      {% if struttura == 'Ateneo di Verona' and session.get('ruolo') != 'admin' %}
+          <a href="{{ url_for('export_report') }}" id="export" class="button-link">Export Data</a>
+      {% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const storico = {{ attivita_svolte | tojson }};
+const programmate = {{ attivita_programmate | tojson }};
+const tableBody = document.querySelector("#tabella-attività tbody");
+const storicoTab = document.getElementById("storico-tab");
+const programmateTab = document.getElementById("programmate-tab");
+const tableError = document.getElementById("table-error-message");
+let selectedRow = null;
+
+const inserisciBtn = document.getElementById("inserisci");
+const modificaBtn = document.getElementById("modifica");
+const cancellaBtn = document.getElementById("cancella");
+
+function popolaTabella(lista) {
+  tableBody.innerHTML = "";
+  selectedRow = null;
+  hideTableError();
+  if (modificaBtn) modificaBtn.disabled = true;
+  if (cancellaBtn) cancellaBtn.disabled = true;
+
+  lista.forEach(att => {
+    const row = document.createElement("tr");
+    row.dataset.id = att.id;
+    row.innerHTML = `
+      <td><a href="/resoconto_attivita/${att.id}" class="link-lookalike">${att.titolo}</a></td>
+      <td>${att.inizio}</td>
+      <td>${att.fine}</td>
+    `;
+    tableBody.appendChild(row);
+  });
+}
+
+function showTableError(msg) {
+    tableError.textContent = msg;
+    tableError.classList.remove('error-hidden');
+    tableError.classList.add('error-visible');
+}
+function hideTableError() {
+    tableError.classList.remove('error-visible');
+    tableError.classList.add('error-hidden');
+}
+
+tableBody.addEventListener("click", e => {
+  const row = e.target.closest("tr");
+  if (!row || !row.dataset.id) return;
+
+  if (e.target.tagName === 'A') {
+      return;
+  }
+  e.preventDefault();
+
+  hideTableError();
+
+  if (cancellaBtn && cancellaBtn.hasAttribute('data-confirming')) {
+      cancellaBtn.removeAttribute('data-confirming');
+      cancellaBtn.textContent = cancellaBtn.dataset.originalText || 'Cancella';
+  }
+
+  if (selectedRow === row) {
+      row.classList.remove("selected");
+      selectedRow = null;
+      if (modificaBtn) modificaBtn.disabled = true;
+      if (cancellaBtn) cancellaBtn.disabled = true;
+  }
+  else {
+      if (selectedRow) {
+          selectedRow.classList.remove("selected");
+      }
+      row.classList.add("selected");
+      selectedRow = row;
+      if (modificaBtn) modificaBtn.disabled = false;
+      if (cancellaBtn) cancellaBtn.disabled = false;
+  }
+});
+
+storicoTab.addEventListener("click", e => {
+  e.preventDefault();
+  storicoTab.classList.add("active");
+  programmateTab.classList.remove("active");
+  popolaTabella(storico);
+});
+
+programmateTab.addEventListener("click", e => {
+  e.preventDefault();
+  programmateTab.classList.add("active");
+  storicoTab.classList.remove("active");
+  popolaTabella(programmate);
+});
+
+if (inserisciBtn) {
+    inserisciBtn.addEventListener("click", () => {
+      window.location.href = "{{ url_for('inserisci_attivita') }}";
+    });
+}
+
+if (modificaBtn) {
+    modificaBtn.addEventListener("click", () => {
+      window.location.href = `/modifica_attivita/${selectedRow.dataset.id}`;
+    });
+}
+
+if (cancellaBtn) {
+    let resetTimer;
+    cancellaBtn.addEventListener("click", async function() {
+        const isConfirming = this.getAttribute('data-confirming') === 'true';
+
+        if (isConfirming) {
+             clearTimeout(resetTimer);
+             this.textContent = 'Eliminazione...';
+             this.disabled = true;
+             if (modificaBtn) modificaBtn.disabled = true;
+
+             const id = selectedRow.dataset.id;
+             try {
+                 const response = await fetch(`/cancella_attivita/${id}`, {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' }
+                 });
+
+                 const contentType = response.headers.get("content-type");
+                 if (contentType && contentType.indexOf("application/json") !== -1) {
+                     const data = await response.json();
+                     if (data.success) {
+                         window.location.reload();
+                     } else {
+                         showTableError("Errore: " + (data.error || "Impossibile cancellare l'attività."));
+                         this.disabled = false;
+                         if (modificaBtn) modificaBtn.disabled = false;
+                         this.removeAttribute('data-confirming');
+                         this.textContent = this.dataset.originalText;
+                     }
+                 } else {
+                      throw new Error("Risposta server non valida.");
+                 }
+             } catch (error) {
+                 console.error("Errore cancellazione:", error);
+                 showTableError("Si è verificato un errore di comunicazione con il server.");
+                 this.disabled = false;
+                 if (modificaBtn) modificaBtn.disabled = false;
+                 this.removeAttribute('data-confirming');
+                 this.textContent = this.dataset.originalText;
+             }
+
+        } else {
+            if (!this.dataset.originalText) {
+                this.dataset.originalText = this.textContent;
+            }
+            this.setAttribute('data-confirming', 'true');
+            this.textContent = 'Confermi?';
+
+            resetTimer = setTimeout(() => {
+                this.removeAttribute('data-confirming');
+                this.textContent = this.dataset.originalText;
+            }, 3000);
+        }
+    });
+}
+
+popolaTabella(storico);
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Referente</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/form_referente.css') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<div class="page-container">
+  <header class="form-header">
+    <a href="{{ url_for('lista_referenti') }}" class="back-btn">← Referenti</a>
+    <h2>{{ 'Modifica' if modalita == 'modifica' else 'Nuovo' }} Referente</h2>
+  </header>
+
+  {% if error %}
+    <div class="error-message error-visible">
+        {{ error }}
+    </div>
+  {% endif %}
+
+  <form id="referente-form" method="POST" action="">
+
+    <section class="form-section">
+      <h3>Dati Personali e Accesso</h3>
+
+      <div class="form-row">
+        <div class="form-group half">
+            <label>Nome *</label>
+            <input type="text" name="nome" required maxlength="32"
+                   value="{{ form_data.nome if form_data else (referente.informazioni_personali.nome if referente and referente.informazioni_personali else '') }}">
+        </div>
+        <div class="form-group half">
+            <label>Cognome *</label>
+            <input type="text" name="cognome" required maxlength="32"
+                   value="{{ form_data.cognome if form_data else (referente.informazioni_personali.cognome if referente and referente.informazioni_personali else '') }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+          <label>Email *</label>
+          <input type="email" name="email" required maxlength="64"
+                 value="{{ form_data.email if form_data else (referente.email if referente else '') }}"
+                 {% if modalita == 'modifica' %}readonly class="input-readonly"{% endif %}>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half password-container">
+            <label>Password <span style="font-weight: normal; font-size: 0.85em; color: #666;">{{ '*' if modalita == 'inserisci' else '(Lasciare vuoto per mantenere la password attuale)' }}</span></label>
+            <div class="input-wrapper">
+                <input type="password" name="password" id="password"
+                       {% if modalita == 'inserisci' %}required{% endif %}
+                       placeholder="{{ 'Nuova password...' if modalita == 'modifica' else 'Password...' }}">
+                <i class="fas fa-eye toggle-password" onclick="togglePassword('password', this)"></i>
+            </div>
+        </div>
+
+        {% if modalita == 'inserisci' %}
+        <div class="form-group half password-container">
+            <label>Conferma Password *</label>
+            <div class="input-wrapper">
+                <input type="password" name="confirm_password" id="confirm_password" required placeholder="Ripeti password...">
+                <i class="fas fa-eye toggle-password" onclick="togglePassword('confirm_password', this)"></i>
+            </div>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="form-section">
+        <h3>Ruolo e Struttura</h3>
+        <div class="form-row">
+            <div class="form-group half">
+              <label>Ruolo *</label>
+              <select name="ruolo" required>
+                  <option value="Referente" {% if referente and referente.ruolo == 'Referente' %}selected{% endif %}>Referente</option>
+                  <option value="admin" {% if referente and referente.ruolo == 'admin' %}selected{% endif %}>Admin (Superuser)</option>
+              </select>
+            </div>
+
+            <div class="form-group half">
+              <label>Struttura Afferita *</label>
+              <select name="struttura_afferita" required>
+                  <option value="">-- Seleziona --</option>
+                  {% for s in strutture %}
+                  <option value="{{ s.nome }}"
+                          {% if referente and referente.struttura_afferita == s.nome %}selected{% endif %}>
+                      {{ s.nome }}
+                  </option>
+                  {% endfor %}
+              </select>
+            </div>
+        </div>
+    </section>
+
+    <div class="form-footer">
+      <button type="submit" class="btn-submit">{{ 'Salva Modifiche' if modalita == 'modifica' else 'Crea Utente' }}</button>
+    </div>
+  </form>
+</div>
+
+<script>
+    function togglePassword(inputId, icon) {
+        const input = document.getElementById(inputId);
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove("fa-eye");
+            icon.classList.add("fa-eye-slash");
+        } else {
+            input.type = "password";
+            icon.classList.remove("fa-eye-slash");
+            icon.classList.add("fa-eye");
+        }
+    }
+</script>
+
+</body>
+</html>

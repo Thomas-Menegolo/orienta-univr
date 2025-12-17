@@ -1,0 +1,136 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #f7f7f7;
+  margin: 0;
+  color: #222;
+}
+
+.page-container {
+  max-width: 700px;
+  margin: 30px auto;
+  background-color: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 15px;
+  position: relative;
+}
+
+.form-header h2 {
+  margin: 0;
+  color: #1b5e20;
+}
+
+.back-btn {
+  position: absolute;
+  left: 0;
+  text-decoration: none;
+  color: #1b5e20;
+  background-color: #f1f8e9;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+.back-btn:hover { background-color: #dcedc8; }
+
+.form-section { margin-bottom: 30px; }
+
+.form-section h3 {
+  color: #2e7d32;
+  border-left: 4px solid #2e7d32;
+  padding-left: 10px;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+}
+.form-group {
+    margin-bottom: 15px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.form-group.half { flex: 1; }
+
+label {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+input, select {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: #1b5e20;
+    box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
+}
+
+.input-readonly {
+    background-color: #f5f5f5;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-wrapper input {
+    padding-right: 35px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    color: #777;
+}
+.toggle-password:hover { color: #333; }
+
+.form-footer { text-align: center; margin-top: 30px; }
+
+.btn-submit {
+    background-color: #1b5e20;
+    color: white;
+    padding: 12px 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.btn-submit:hover { background-color: #2e7d32; }
+
+.error-message {
+    color: #d32f2f;
+    background-color: #ffebee;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    border-left: 4px solid #d32f2f;
+}
+.error-visible { display: block; animation: fadeIn 0.3s; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}

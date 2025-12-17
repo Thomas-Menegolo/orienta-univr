@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ 'Modifica' if modalita == 'modifica' else 'Nuova' }} Attività</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/univr_logo.jpg') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/css/intlTelInput.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/form_attivita.css') }}">
+</head>
+<body>
+
+<div class="page-container">
+  <header class="form-header">
+    <a href="{{ url_for('attivita') }}" class="back-btn">← Attività</a>
+    <h2>{{ 'Modifica' if modalita == 'modifica' else 'Nuova' }} Attività</h2>
+  </header>
+
+  <form id="attivita-form" method="POST" action="{{ url_for('modifica_attivita', id_attivita=attivita.id) if modalita == 'modifica' else url_for('inserisci_attivita') }}">
+
+    <section class="form-section">
+      <div class="form-row">
+        <div class="form-group flex-grow">
+          <label>Titolo *</label>
+          <input type="text" name="titolo" required maxlength="64" placeholder="Es. Orientamento 2025" value="{{ attivita.titolo if attivita else '' }}">
+        </div>
+        <div class="form-group w-small">
+          <label>Tot. Ore</label>
+          <input type="number" name="totale_ore" min="1" placeholder="10" value="{{ attivita.totale_ore if attivita else '' }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Descrizione</label>
+        <textarea name="descrizione" rows="3" maxlength="512" placeholder="Descrizione...">{{ attivita.descrizione if attivita and attivita.descrizione else '' }}</textarea>
+      </div>
+
+      <div class="form-row mt-medium">
+        <div class="form-group half">
+          <label>Data Inizio *</label>
+          <input type="date" id="data_inizio" name="data_inizio" required value="{{ attivita.data_inizio if attivita else '' }}">
+        </div>
+        <div class="form-group half">
+          <label>Data Fine *</label>
+          <input type="date" id="data_fine" name="data_fine" required value="{{ attivita.data_fine if attivita else '' }}">
+        </div>
+      </div>
+      <div id="date-error" class="error-message">
+        La Data Fine deve essere successiva o uguale alla Data Inizio.
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-header-shortcuts">
+        <h3>Organizzazione</h3>
+        <div class="shortcut-group">
+            <a href="{{ url_for('inserisci_personale', return_to=request.endpoint, return_id=attivita.id if attivita else '') }}" class="btn-shortcut" data-save-form="true">+ Personale</a>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Referente Principale *</label>
+          <select name="referente" class="personale-select" required>
+            <option value="">-- Seleziona --</option>
+            {% for p in personale_opt %}
+            <option value="{{ p.id }}" {% if attivita and attivita.referente == p.id %}selected{% endif %}>{{ p.text }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group half">
+          <label>Dipartimento Organizzante *</label>
+          <select name="dip_organizzante" class="struttura-select" required>
+            <option value="">-- Seleziona --</option>
+            {% for s in strutture %}
+            <option value="{{ s.nome }}" {% if attivita and attivita.dip_organizzante == s.nome %}selected{% endif %}>{{ s.nome }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <hr class="sub-divider">
+
+      <div id="supervisori-container">
+        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #555;">Supervisori</label>
+      </div>
+
+      <div id="collaboratori-container" class="mt-medium">
+        <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #555;">Dipartimenti Partecipanti</label>
+      </div>
+    </section>
+
+    <section class="form-section">
+      <div class="section-header-shortcuts">
+        <h3>Partecipanti</h3>
+        <div class="shortcut-group">
+            <a href="{{ url_for('inserisci_scuola', return_to=request.endpoint, return_id=attivita.id if attivita else '') }}" class="btn-shortcut" data-save-form="true">+ Scuola</a>
+            <a href="{{ url_for('inserisci_indirizzo', return_to=request.endpoint, return_id=attivita.id if attivita else '') }}" class="btn-shortcut" data-save-form="true">+ Indirizzo</a>
+        </div>
+      </div>
+      <div id="scuole-container">
+      </div>
+      <button type="button" class="btn-add-big" onclick="addScuola()">+ Aggiungi Scuola</button>
+    </section>
+
+    <div class="form-footer">
+      <button type="submit" class="btn-submit">{{ 'Salva Modifiche' if modalita == 'modifica' else 'Inserisci Attività' }}</button>
+    </div>
+  </form>
+</div>
+
+
+<template id="tmpl-supervisore">
+  <div class="dynamic-row supervisore-row">
+    <div class="form-group flex-grow">
+        <select name="supervisori[]" class="personale-select">
+          <option value="">-- Seleziona Supervisore --</option>
+          {% for p in personale_opt %}
+          <option value="{{ p.id }}">{{ p.text }}</option>
+          {% endfor %}
+        </select>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-add" onclick="addSupervisore()">+</button>
+      <button type="button" class="btn-remove" onclick="removeRow(this)">×</button>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-collaboratore">
+  <div class="dynamic-row collaboratore-row">
+    <div class="form-group flex-grow">
+        <select name="collaboratori[]" class="struttura-select">
+          <option value="">-- Seleziona Dipartimento --</option>
+          {% for s in strutture %}
+          <option value="{{ s.nome }}">{{ s.nome }}</option>
+          {% endfor %}
+        </select>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn-add" onclick="addCollaboratore()">+</button>
+      <button type="button" class="btn-remove" onclick="removeRow(this)">×</button>
+    </div>
+  </div>
+</template>
+
+<template id="tmpl-scuola">
+  <div class="scuola-block" data-scuola-idx="">
+    <div class="scuola-header dynamic-row">
+      <div class="form-group flex-grow">
+        <label>Scuola</label>
+        <select name="" class="scuola-select">
+          <option value="">-- Seleziona Scuola --</option>
+          {% for s in scuole_opt %}
+          <option value="{{ s.id }}">{{ s.text }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="actions header-actions">
+         <button type="button" class="btn-remove-scuola" onclick="removeScuola(this)">Elimina Scuola</button>
+      </div>
+    </div>
+    <div class="indirizzi-container"></div>
+  </div>
+</template>
+
+<template id="tmpl-indirizzo">
+  <div class="indirizzo-block">
+    <div class="dynamic-row indirizzo-header-row">
+      <div class="form-group flex-grow">
+         <label class="sub-label">Indirizzo</label>
+         <select name="" class="indirizzo-select">
+           <option value="">-- Prima seleziona una scuola --</option>
+         </select>
+      </div>
+      <div class="actions bottom-aligned-actions">
+        <button type="button" class="btn-add" onclick="addIndirizzo(this)">+</button>
+        <button type="button" class="btn-remove" onclick="removeRow(this)">×</button>
+      </div>
+    </div>
+    <div class="studenti-row">
+       <div class="form-group">
+         <label class="sub-label">Tot. Studenti</label>
+         <input type="number" name="" class="input-tot" min="0" placeholder="0" disabled>
+       </div>
+       <div class="form-group">
+         <label class="sub-label">Maschi</label>
+         <input type="number" name="" class="input-maschi" min="0" placeholder="0" disabled>
+       </div>
+       <div class="form-group">
+         <label class="sub-label">Femmine</label>
+         <input type="number" name="" class="input-femmine" min="0" placeholder="0" disabled>
+       </div>
+
+       <div class="form-group form-group-classi">
+         <label class="sub-label">Classi</label>
+         <div class="classi-toggle-container">
+            <button type="button" class="btn-classe" data-value="1°" disabled>1°</button>
+            <button type="button" class="btn-classe" data-value="2°" disabled>2°</button>
+            <button type="button" class="btn-classe" data-value="3°" disabled>3°</button>
+            <button type="button" class="btn-classe" data-value="4°" disabled>4°</button>
+            <button type="button" class="btn-classe" data-value="5°" disabled>5°</button>
+         </div>
+         <div class="classi-hidden-inputs"></div>
+       </div>
+       </div>
+    <div class="error-message">Errore validazione studenti.</div>
+  </div>
+</template>
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/intlTelInput.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.13/js/utils.js"></script>
+
+<script>
+  function addRow(containerId, templateId, selectedValue = null, isFirst = false) {
+    const container = document.getElementById(containerId);
+    const tmpl = document.getElementById(templateId);
+    const clone = tmpl.content.cloneNode(true);
+    const row = clone.firstElementChild;
+    if (isFirst) {
+        const removeBtn = row.querySelector('.btn-remove');
+        if (removeBtn) removeBtn.classList.add('hidden-visibility');
+    }
+    if (selectedValue) {
+        row.querySelector('select').value = selectedValue;
+    }
+    container.appendChild(clone);
+    updateMutualExclusion();
+    return row;
+  }
+  function addSupervisore(val = null, isFirst = false) {
+      const row = addRow('supervisori-container', 'tmpl-supervisore', val, isFirst);
+      const select = row.querySelector('select');
+      select.innerHTML = '<option value="">-- Seleziona Supervisore --</option>';
+      {% for p in personale_opt %}
+          select.options.add(new Option({{ p.text | tojson }}, "{{ p.id }}"));
+      {% endfor %}
+      select.value = val;
+  }
+  function addCollaboratore(val = null, isFirst = false) {
+      const row = addRow('collaboratori-container', 'tmpl-collaboratore', val, isFirst);
+      const select = row.querySelector('select');
+      select.innerHTML = '<option value="">-- Seleziona Dipartimento --</option>';
+      {% for s in strutture %}
+          select.options.add(new Option({{ s.nome | tojson }}, "{{ s.nome }}"));
+      {% endfor %}
+      select.value = val;
+  }
+  function removeRow(btn) {
+    const indirizzoBlock = btn.closest('.indirizzo-block');
+    if (indirizzoBlock) {
+        const scuolaBlock = indirizzoBlock.closest('.scuola-block');
+        indirizzoBlock.remove();
+        if (scuolaBlock) updateIndirizziExclusion(scuolaBlock);
+        return;
+    }
+    const dynamicRow = btn.closest('.dynamic-row');
+    if (dynamicRow) {
+        dynamicRow.remove();
+        updateMutualExclusion();
+    }
+  }
+  let scuolaCounter = 0;
+  function addScuola(scuolaId = null, indirizziData = null) {
+    const container = document.getElementById('scuole-container');
+    const tmpl = document.getElementById('tmpl-scuola');
+    const clone = tmpl.content.cloneNode(true);
+    const scuolaBlock = clone.querySelector('.scuola-block');
+    scuolaBlock.dataset.scuolaIdx = scuolaCounter;
+    const scuolaSelect = scuolaBlock.querySelector('.scuola-select');
+    scuolaSelect.name = `scuole[${scuolaCounter}][id]`;
+
+    scuolaSelect.innerHTML = '<option value="">-- Seleziona Scuola --</option>';
+    {% for s in scuole_opt %}
+        scuolaSelect.options.add(new Option({{ s.text | tojson }}, "{{ s.id }}"));
+    {% endfor %}
+
+    if (scuolaId) scuolaSelect.value = scuolaId;
+    container.appendChild(clone);
+    scuolaCounter++;
+    if (scuolaId && indirizziData && indirizziData.length > 0) {
+        loadIndirizziForScuola(scuolaBlock, scuolaId, indirizziData);
+    } else {
+        addIndirizzoToScuola(scuolaBlock, true);
+    }
+    updateMutualExclusion();
+  }
+
+  async function loadIndirizziForScuola(scuolaBlock, scuolaId, indirizziData) {
+      let options = indirizziCache[scuolaId];
+      if (!options) {
+          try {
+              const r = await fetch(`/api/indirizzi/${scuolaId}`);
+              options = await r.json();
+              indirizziCache[scuolaId] = options;
+          } catch (e) { console.error("Errore caricamento indirizzi:", e); options = []; }
+      }
+
+      scuolaBlock.dataset.currentIndirizzi = JSON.stringify(options);
+
+      indirizziData.forEach((dati, idx) => {
+          addIndirizzoToScuola(scuolaBlock, idx === 0, dati, options);
+      });
+  }
+
+  function removeScuola(btn) {
+      btn.closest('.scuola-block').remove();
+      updateMutualExclusion();
+  }
+  function addIndirizzo(btn) {
+      addIndirizzoToScuola(btn.closest('.scuola-block'), false);
+  }
+  function addIndirizzoToScuola(scuolaBlock, isFirst, preData = null, preOptions = null) {
+    const container = scuolaBlock.querySelector('.indirizzi-container');
+    const tmpl = document.getElementById('tmpl-indirizzo');
+    const clone = tmpl.content.cloneNode(true);
+    const row = clone.querySelector('.indirizzo-block');
+    const select = row.querySelector('.indirizzo-select');
+    if (isFirst) {
+        row.querySelector('.btn-remove').classList.add('hidden-visibility');
+    }
+    const optionsToUse = preOptions || (scuolaBlock.dataset.currentIndirizzi ? JSON.parse(scuolaBlock.dataset.currentIndirizzi) : null);
+    if (optionsToUse) {
+        populateIndirizzoSelect(select, optionsToUse);
+    }
+    if (preData) {
+        select.value = preData.indirizzo;
+        row.querySelector('.input-tot').value = preData.tot !== null ? preData.tot : "";
+        row.querySelector('.input-maschi').value = preData.maschi !== null ? preData.maschi : "";
+        row.querySelector('.input-femmine').value = preData.femmine !== null ? preData.femmine : "";
+        if (preData.classi) {
+            const classiSelezionate = preData.classi.split(',').map(s => s.trim());
+            row.querySelectorAll('.btn-classe').forEach(btn => {
+              if (classiSelezionate.includes(btn.dataset.value)) {
+                btn.classList.add('selected');
+              }
+            });
+        }
+        toggleStudentiInputs(select);
+    }
+    container.appendChild(clone);
+    reindexIndirizzi(scuolaBlock);
+    updateIndirizziExclusion(scuolaBlock);
+  }
+  function reindexIndirizzi(scuolaBlock) {
+     const idx = scuolaBlock.dataset.scuolaIdx;
+     scuolaBlock.querySelectorAll('.indirizzo-block').forEach((b, i) => {
+         b.querySelector('.indirizzo-select').name = `scuole[${idx}][indirizzi][${i}][id]`;
+         b.querySelector('.input-tot').name = `scuole[${idx}][indirizzi][${i}][tot]`;
+         b.querySelector('.input-maschi').name = `scuole[${idx}][indirizzi][${i}][maschi]`;
+         b.querySelector('.input-femmine').name = `scuole[${idx}][indirizzi][${i}][femmine]`;
+         updateHiddenClassi(b);
+     });
+  }
+  function updateHiddenClassi(indirizzoBlock) {
+      const container = indirizzoBlock.querySelector('.classi-hidden-inputs');
+      const buttons = indirizzoBlock.querySelectorAll('.btn-classe.selected');
+      const baseName = indirizzoBlock.querySelector('.indirizzo-select').name;
+      let finalName = "";
+      if (baseName) {
+          finalName = baseName.replace(/\[id\]$/, '[classi]');
+      }
+      container.innerHTML = '';
+      buttons.forEach(btn => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = finalName;
+          input.value = btn.dataset.value;
+          container.appendChild(input);
+      });
+  }
+  const indirizziCache = {};
+  document.addEventListener('click', e => {
+      if (e.target.matches('.btn-classe')) {
+          e.preventDefault();
+          if (e.target.disabled) return;
+          e.target.classList.toggle('selected');
+          updateHiddenClassi(e.target.closest('.indirizzo-block'));
+      }
+  });
+  document.addEventListener('change', async e => {
+    if (e.target.matches('.scuola-select')) {
+        const select = e.target;
+        const block = select.closest('.scuola-block');
+        const val = select.value;
+        if (val) {
+            if (!indirizziCache[val]) {
+                try {
+                    const r = await fetch(`/api/indirizzi/${val}`);
+                    indirizziCache[val] = await r.json();
+                } catch (e) { console.error("Errore API:", e); indirizziCache[val] = []; }
+            }
+            updateIndirizziOptions(block, indirizziCache[val]);
+        } else {
+            updateIndirizziOptions(block, []);
+        }
+        block.querySelectorAll('.indirizzo-select').forEach(s => {
+            s.value = "";
+            toggleStudentiInputs(s);
+        });
+        updateIndirizziExclusion(block);
+        updateMutualExclusion();
+    }
+    if (e.target.matches('.indirizzo-select')) {
+        toggleStudentiInputs(e.target);
+        updateIndirizziExclusion(e.target.closest('.scuola-block'));
+    }
+    if (e.target.matches('.personale-select, .struttura-select')) {
+        updateMutualExclusion();
+    }
+  });
+  function toggleStudentiInputs(select) {
+      const block = select.closest('.indirizzo-block');
+      const isSel = select.value !== "";
+      block.querySelectorAll('.studenti-row input[type="number"]').forEach(i => {
+          i.disabled = !isSel;
+          if (!isSel) { i.value = ""; i.style.borderColor = ""; }
+      });
+      block.querySelectorAll('.btn-classe').forEach(btn => {
+          btn.disabled = !isSel;
+          if (!isSel) { btn.classList.remove('selected'); }
+      });
+      if (!isSel) { updateHiddenClassi(block); }
+      if (!isSel) block.querySelector('.error-message').classList.remove('error-visible');
+  }
+  function populateIndirizzoSelect(el, list) {
+    const cur = el.value;
+    el.innerHTML = '<option value="">-- Seleziona Indirizzo --</option>';
+    list.forEach(i => {
+        const o = document.createElement('option');
+        o.value = i.indirizzo;
+        o.textContent = i.indirizzo;
+        el.appendChild(o);
+    });
+    if (list.some(i => i.indirizzo === cur)) el.value = cur;
+  }
+  function updateIndirizziOptions(block, list) {
+    block.dataset.currentIndirizzi = JSON.stringify(list);
+    block.querySelectorAll('.indirizzo-select').forEach(s => populateIndirizzoSelect(s, list));
+  }
+  function updateMutualExclusion() {
+      handleExclusion('.personale-select');
+      handleExclusion('.struttura-select');
+      handleExclusion('.scuola-select');
+  }
+  function handleExclusion(sel) {
+    const all = document.querySelectorAll(sel);
+    const vals = Array.from(all).map(s => s.value).filter(v => v);
+    all.forEach(s => {
+        Array.from(s.options).forEach(o => {
+            o.disabled = o.value && vals.includes(o.value) && o.value !== s.value;
+        });
+    });
+  }
+  function updateIndirizziExclusion(block) {
+    const all = block.querySelectorAll('.indirizzo-select');
+    const vals = Array.from(all).map(s => s.value).filter(v => v);
+    all.forEach(s => {
+        Array.from(s.options).forEach(o => {
+            o.disabled = o.value && vals.includes(o.value) && o.value !== s.value;
+        });
+    });
+  }
+
+  document.getElementById('attivita-form').addEventListener('submit', function(e) {
+
+  });
+
+
+
+  const MODALITA = "{{ modalita }}";
+  const FORM_STORAGE_KEY = `formAttivitaData_${MODALITA === 'modifica' ? '{{ attivita.id }}' : 'new'}`;
+  const mainForm = document.getElementById('attivita-form');
+
+  function saveFormState() {
+      const data = {
+          titolo: mainForm.querySelector('[name="titolo"]').value,
+          descrizione: mainForm.querySelector('[name="descrizione"]').value,
+          data_inizio: mainForm.querySelector('[name="data_inizio"]').value,
+          data_fine: mainForm.querySelector('[name="data_fine"]').value,
+          totale_ore: mainForm.querySelector('[name="totale_ore"]').value,
+          referente: mainForm.querySelector('[name="referente"]').value,
+          dip_organizzante: mainForm.querySelector('[name="dip_organizzante"]').value,
+          supervisori: Array.from(mainForm.querySelectorAll('[name="supervisori[]"]')).map(s => s.value),
+          collaboratori: Array.from(mainForm.querySelectorAll('[name="collaboratori[]"]')).map(s => s.value)
+      };
+      localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(data));
+  }
+
+  function loadFormState() {
+      const dataString = localStorage.getItem(FORM_STORAGE_KEY);
+      if (!dataString) return;
+
+      const data = JSON.parse(dataString);
+
+      mainForm.querySelector('[name="titolo"]').value = data.titolo || '';
+      mainForm.querySelector('[name="descrizione"]').value = data.descrizione || '';
+      mainForm.querySelector('[name="data_inizio"]').value = data.data_inizio || '';
+      mainForm.querySelector('[name="data_fine"]').value = data.data_fine || '';
+      mainForm.querySelector('[name="totale_ore"]').value = data.totale_ore || '';
+      mainForm.querySelector('[name="referente"]').value = data.referente || '';
+      mainForm.querySelector('[name="dip_organizzante"]').value = data.dip_organizzante || '';
+
+      const supContainer = document.getElementById('supervisori-container');
+      supContainer.querySelectorAll('.dynamic-row').forEach(row => row.remove());
+      if (data.supervisori && data.supervisori.length > 0) {
+          data.supervisori.forEach((val, idx) => addSupervisore(val, idx === 0));
+      } else {
+          addSupervisore(null, true);
+      }
+
+      const colContainer = document.getElementById('collaboratori-container');
+      colContainer.querySelectorAll('.dynamic-row').forEach(row => row.remove());
+      if (data.collaboratori && data.collaboratori.length > 0) {
+          data.collaboratori.forEach((val, idx) => addCollaboratore(val, idx === 0));
+      } else {
+          addCollaboratore(null, true);
+      }
+
+      localStorage.removeItem(FORM_STORAGE_KEY);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+      const DATI_SUPERVISORI = {{ attivita.supervisori | tojson if attivita and attivita.supervisori else '[]' }};
+      const DATI_COLLABORATORI = {{ attivita.collaboratori | tojson if attivita and attivita.collaboratori else '[]' }};
+      const DATI_SCUOLE = {{ scuole_preload | tojson if scuole_preload else '[]' }};
+
+      if (localStorage.getItem(FORM_STORAGE_KEY)) {
+          loadFormState();
+          if (DATI_SCUOLE.length === 0) addScuola();
+      } else {
+          if (MODALITA === 'modifica') {
+              DATI_SUPERVISORI.forEach((id, idx) => addSupervisore(id, idx === 0));
+              if (DATI_SUPERVISORI.length === 0) addSupervisore(null, true);
+
+              DATI_COLLABORATORI.forEach((id, idx) => addCollaboratore(id, idx === 0));
+              if (DATI_COLLABORATORI.length === 0) addCollaboratore(null, true);
+
+              DATI_SCUOLE.forEach(dati => addScuola(dati.id_scuola, dati.indirizzi));
+              if (DATI_SCUOLE.length === 0) addScuola();
+          } else {
+              addSupervisore(null, true);
+              addCollaboratore(null, true);
+              addScuola();
+          }
+      }
+      updateMutualExclusion();
+
+      document.addEventListener('click', e => {
+          if (e.target.matches('[data-save-form="true"]')) {
+              saveFormState();
+          }
+      });
+  });
+
+</script>
+{% endblock %}
