@@ -32,12 +32,14 @@
         <div class="form-group half">
             <label>Nome *</label>
             <input type="text" name="nome" required maxlength="32"
-                   value="{{ form_data.nome if form_data else (referente.informazioni_personali.nome if referente and referente.informazioni_personali else '') }}">
+                   value="{{ form_data.nome if form_data else (referente.informazioni_personali.nome if referente and referente.informazioni_personali else '') }}"
+                   {% if is_self %}readonly class="input-readonly"{% endif %}>
         </div>
         <div class="form-group half">
             <label>Cognome *</label>
             <input type="text" name="cognome" required maxlength="32"
-                   value="{{ form_data.cognome if form_data else (referente.informazioni_personali.cognome if referente and referente.informazioni_personali else '') }}">
+                   value="{{ form_data.cognome if form_data else (referente.informazioni_personali.cognome if referente and referente.informazioni_personali else '') }}"
+                   {% if is_self %}readonly class="input-readonly"{% endif %}>
         </div>
       </div>
 
@@ -45,7 +47,7 @@
           <label>Email *</label>
           <input type="email" name="email" required maxlength="64"
                  value="{{ form_data.email if form_data else (referente.email if referente else '') }}"
-                 {% if modalita == 'modifica' %}readonly class="input-readonly"{% endif %}>
+                 {% if modalita == 'modifica' or is_self %}readonly class="input-readonly"{% endif %}>
       </div>
 
       <div class="form-row">
@@ -76,15 +78,17 @@
         <div class="form-row">
             <div class="form-group half">
               <label>Ruolo *</label>
-              <select name="ruolo" required>
+              <select name="ruolo" required {% if is_self %}disabled class="input-readonly"{% endif %}>
                   <option value="Referente" {% if referente and referente.ruolo == 'Referente' %}selected{% endif %}>Referente</option>
-                  <option value="admin" {% if referente and referente.ruolo == 'admin' %}selected{% endif %}>Admin (Superuser)</option>
+                  <option value="Ufficio Orientamento" {% if referente and referente.ruolo == 'Ufficio Orientamento' %}selected{% endif %}>Ufficio Orientamento</option>
               </select>
+              {# Se la select è disabled, il valore non viene inviato. Il backend is_self già lo ignora, ma questo campo hidden garantisce coerenza se servisse #}
+              {% if is_self %}<input type="hidden" name="ruolo" value="{{ referente.ruolo }}">{% endif %}
             </div>
 
             <div class="form-group half">
               <label>Struttura Afferita *</label>
-              <select name="struttura_afferita" required>
+              <select name="struttura_afferita" required {% if is_self %}disabled class="input-readonly"{% endif %}>
                   <option value="">-- Seleziona --</option>
                   {% for s in strutture %}
                   <option value="{{ s.nome }}"
@@ -93,6 +97,7 @@
                   </option>
                   {% endfor %}
               </select>
+              {% if is_self %}<input type="hidden" name="struttura_afferita" value="{{ referente.struttura_afferita }}">{% endif %}
             </div>
         </div>
     </section>

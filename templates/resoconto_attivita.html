@@ -17,22 +17,16 @@
     <dl class="detail-grid">
       <dt>Periodo</dt>
       <dd>{{ attivita.data_inizio.strftime('%d/%m/%Y') }} - {{ attivita.data_fine.strftime('%d/%m/%Y') }}</dd>
-
       <dt>Ore Svolte</dt>
       <dd>{{ attivita.totale_ore or 'N/D' }}</dd>
-
       <dt>Descrizione</dt>
       <dd>{{ attivita.descrizione or 'Nessuna descrizione.' }}</dd>
-
       <dt>Dipartimento Organizzante</dt>
       <dd>{{ attivita.struttura_organizzante }}</dd>
-
       <dt>Docente Referente</dt>
       <dd>{{ attivita.docente_presidente_rel.cognome }} {{ attivita.docente_presidente_rel.nome }}</dd>
-
       <dt>Dipartimenti Partecipanti</dt>
       <dd>{{ collaboratori_str or 'Nessuno' }}</dd>
-
       <dt>Docenti Supervisori</dt>
       <dd>{{ supervisori_str or 'Nessuno' }}</dd>
     </dl>
@@ -42,7 +36,6 @@
 
   <section class="resoconto-section">
     <h2>Scuole Partecipanti</h2>
-
     {% if not part_map %}
       <p class="no-data">Nessuna scuola ha partecipato a questa attività.</p>
     {% endif %}
@@ -70,6 +63,7 @@
               <th>Tot. Studenti</th>
               <th>Maschi</th>
               <th>Femmine</th>
+              <th>Altro</th>
             </tr>
           </thead>
           <tbody>
@@ -81,6 +75,7 @@
               <td>{{ p.totale_studenti or 'N/D' }}</td>
               <td>{{ p.totale_maschi or 'N/D' }}</td>
               <td>{{ p.totale_femmine or 'N/D' }}</td>
+              <td>{{ (p.totale_studenti - (p.totale_maschi or 0) - (p.totale_femmine or 0)) if p.totale_studenti else 'N/D' }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -92,12 +87,10 @@
   <hr class="resoconto-divider">
 
   <section class="resoconto-section">
-
     {% if not dati_disponibili %}
       <p class="no-data">Dati statistici non disponibili (Nessun studente registrato per questa attività).</p>
     {% else %}
       <div class="charts-container">
-
         <div class="chart-box">
           <h3 class="chart-title">Suddivisione studentesca per Scuola</h3>
           <div class="chart-wrapper">
@@ -121,9 +114,7 @@
           </div>
           <div id="legendIndirizzi" class="chart-legend-container"></div>
         </div>
-
       </div>
-
     {% endif %}
   </section>
 
@@ -134,24 +125,13 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    if (!{{ dati_disponibili | tojson }}) {
-        return;
-    }
+    if (!{{ dati_disponibili | tojson }}) return;
 
-    const diverseColors = [
-        '#4bc0c0',
-        '#ffcd56',
-        '#ff9f40',
-        '#9966ff',
-        '#c9cbcf',
-        '#36a2eb',
-        '#ff6384'
-    ];
+    const diverseColors = ['#4bc0c0', '#ffcd56', '#ff9f40', '#9966ff', '#c9cbcf', '#36a2eb', '#ff6384'];
 
     const getOrCreateLegendList = (chart, id) => {
       const legendContainer = document.getElementById(id);
       let listContainer = legendContainer.querySelector('ul');
-
       if (!listContainer) {
         listContainer = document.createElement('ul');
         listContainer.className = 'chart-legend-list';
@@ -165,26 +145,18 @@ document.addEventListener('DOMContentLoaded', () => {
       afterUpdate(chart, args, options) {
         const ul = getOrCreateLegendList(chart, options.containerID);
         ul.innerHTML = '';
-
         const items = chart.options.plugins.legend.labels.generateLabels(chart);
-
         items.forEach(item => {
           const li = document.createElement('li');
           li.className = 'chart-legend-item';
-          li.onclick = () => {
-            chart.toggleDataVisibility(item.index);
-            chart.update();
-          };
-
+          li.onclick = () => { chart.toggleDataVisibility(item.index); chart.update(); };
           const colorBox = document.createElement('span');
           colorBox.className = 'legend-color-box';
           colorBox.style.backgroundColor = item.fillStyle;
-
           const textContainer = document.createElement('span');
           textContainer.className = 'legend-text';
           textContainer.style.textDecoration = item.hidden ? 'line-through' : '';
           textContainer.appendChild(document.createTextNode(item.text));
-
           li.appendChild(colorBox);
           li.appendChild(textContainer);
           ul.appendChild(li);
@@ -194,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tooltipLabelCallback = (context) => {
         let label = context.label || '';
-        if (label) { label += ': '; }
+        if (label) label += ': ';
         const value = context.raw || 0;
         const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
         const percentage = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '0%';
@@ -211,7 +183,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tooltip: { callbacks: { label: tooltipLabelCallback } }
         }
     });
-
 
     const ctxScuole = document.getElementById('chartScuole');
     new Chart(ctxScuole, {
@@ -237,17 +208,12 @@ document.addEventListener('DOMContentLoaded', () => {
             datasets: [{
                 label: 'Suddivisione Sesso',
                 data: {{ chart_sesso_data | tojson }},
-                backgroundColor: [
-                  'rgb(54, 162, 235)',
-                  'rgb(255, 99, 132)',
-                  'rgb(201, 203, 207)'
-                ],
+                backgroundColor: ['rgb(54, 162, 235)', 'rgb(255, 99, 132)', 'rgb(201, 203, 207)'],
             }]
         },
         options: getChartOptions('legendSesso'),
         plugins: [htmlLegendPlugin]
     });
-
 
     const ctxIndirizzi = document.getElementById('chartIndirizzi');
     new Chart(ctxIndirizzi, {

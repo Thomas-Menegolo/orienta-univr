@@ -14,7 +14,6 @@
         <h1 class="page-title">Resoconto Generale - {{ struttura }}</h1>
 
         <div class="filters-toolbar">
-
             <form method="GET" class="filter-item">
                 <label for="year"><i class="far fa-calendar-alt"></i> Anno:</label>
                 <select name="year" id="year" onchange="this.form.submit()" class="modern-select">
@@ -41,7 +40,6 @@
                         {% endif %}
                     {% endfor %}
                 </select>
-
                 <input type="hidden" name="year" value="{{ selected_year }}">
             </form>
             {% endif %}
@@ -135,14 +133,12 @@
     <div class="charts-row" style="margin-top: 60px; border-top: 2px dashed #ccc; padding-top: 40px;">
         <div class="chart-container full-width">
             <h2 style="text-align: left; color: #1b5e20; margin-bottom: 30px;">Confronto Dipartimenti</h2>
-
             <div style="margin-bottom: 50px;">
                 <h3>Studenti Raggiunti</h3>
                 <div class="chart-wrapper-wide">
                     <canvas id="chartCompStud"></canvas>
                 </div>
             </div>
-
             <div>
                 <h3>Attività Organizzate</h3>
                 <div class="chart-wrapper-wide">
@@ -184,7 +180,7 @@
 
     function getStudentDatasets(dataSource) {
         const totals = dataSource.maschi.map((num, idx) => {
-            return num + dataSource.femmine[idx] + dataSource.nonspec[idx];
+            return num + dataSource.femmine[idx] + dataSource.altro[idx];
         });
 
         return [{
@@ -226,9 +222,7 @@
                     grace: '10%',
                     stacked: false
                 },
-                x: {
-                    stacked: false
-                }
+                x: { stacked: false }
             }
         };
 
@@ -265,6 +259,7 @@
     renderDynamicChart('chartSchools', 'school', 'students');
     renderDynamicChart('chartAddresses', 'address', 'students');
 
+
     const ctxSesso = document.getElementById('chartSesso');
     new Chart(ctxSesso, {
         type: 'doughnut',
@@ -279,11 +274,9 @@
     });
 
     {% if struttura == 'Ateneo di Verona' %}
-
     const dataCompStudRaw = {{ chart_comp_stud_stacked | tojson }};
-
     const totalsComp = dataCompStudRaw.maschi.map((num, idx) => {
-        return num + dataCompStudRaw.femmine[idx] + dataCompStudRaw.nonspec[idx];
+        return num + dataCompStudRaw.femmine[idx] + dataCompStudRaw.altro[idx];
     });
 
     const ctxCompStud = document.getElementById('chartCompStud');
@@ -326,11 +319,7 @@
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1, precision: 0 },
-                    grace: '10%'
-                }
+                y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grace: '10%' }
             }
         }
     });
@@ -371,27 +360,24 @@
 
         compareContainer.style.display = 'block';
         const ctx = document.getElementById('chartCompare');
-
         if(compareChart) compareChart.destroy();
-
-        const datasets = [{
-            label: 'Totale Studenti',
-            data: data.values,
-            backgroundColor: '#36a2eb'
-        }];
 
         compareChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: data.labels,
-                datasets: datasets
+                datasets: [{
+                    label: 'Totale Studenti',
+                    data: data.values,
+                    backgroundColor: '#36a2eb'
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 scales: {
-                    x: { stacked: false }, // Rimosso stack
+                    x: { stacked: false },
                     y: { stacked: false, beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grace: '10%' }
                 }
             }

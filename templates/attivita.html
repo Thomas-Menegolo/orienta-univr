@@ -29,13 +29,13 @@
   <div id="table-error-message" class="table-error error-hidden"></div>
 
   <div class="buttons">
-      {% if struttura != 'Ateneo di Verona' or session.get('ruolo') == 'admin' %}
+      {% if struttura != 'Ateneo di Verona' or session.get('ruolo') == 'Ufficio Orientamento' %}
           <button id="inserisci">Inserisci</button>
           <button id="modifica" disabled>Modifica</button>
           <button id="cancella" class="btn-inline-confirm" disabled>Cancella</button>
       {% endif %}
 
-      {% if struttura == 'Ateneo di Verona' and session.get('ruolo') != 'admin' %}
+      {% if struttura == 'Ateneo di Verona' and session.get('ruolo') != 'Ufficio Orientamento' %}
           <a href="{{ url_for('export_report') }}" id="export" class="button-link">Export Data</a>
       {% endif %}
   </div>

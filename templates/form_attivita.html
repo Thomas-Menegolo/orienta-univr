@@ -109,7 +109,6 @@
   </form>
 </div>
 
-
 <template id="tmpl-supervisore">
   <div class="dynamic-row supervisore-row">
     <div class="form-group flex-grow">
@@ -180,8 +179,8 @@
     </div>
     <div class="studenti-row">
        <div class="form-group">
-         <label class="sub-label">Tot. Studenti</label>
-         <input type="number" name="" class="input-tot" min="0" placeholder="0" disabled>
+         <label class="sub-label">Tot. Studenti *</label>
+         <input type="number" name="" class="input-tot" min="1" placeholder="0" disabled required>
        </div>
        <div class="form-group">
          <label class="sub-label">Maschi</label>
@@ -190,6 +189,10 @@
        <div class="form-group">
          <label class="sub-label">Femmine</label>
          <input type="number" name="" class="input-femmine" min="0" placeholder="0" disabled>
+       </div>
+       <div class="form-group">
+         <label class="sub-label">Altro</label>
+         <input type="number" name="" class="input-altro" min="0" placeholder="0" disabled>
        </div>
 
        <div class="form-group form-group-classi">
@@ -203,7 +206,7 @@
          </div>
          <div class="classi-hidden-inputs"></div>
        </div>
-       </div>
+    </div>
     <div class="error-message">Errore validazione studenti.</div>
   </div>
 </template>
@@ -296,9 +299,7 @@
               indirizziCache[scuolaId] = options;
           } catch (e) { console.error("Errore caricamento indirizzi:", e); options = []; }
       }
-
       scuolaBlock.dataset.currentIndirizzi = JSON.stringify(options);
-
       indirizziData.forEach((dati, idx) => {
           addIndirizzoToScuola(scuolaBlock, idx === 0, dati, options);
       });
@@ -329,6 +330,7 @@
         row.querySelector('.input-tot').value = preData.tot !== null ? preData.tot : "";
         row.querySelector('.input-maschi').value = preData.maschi !== null ? preData.maschi : "";
         row.querySelector('.input-femmine').value = preData.femmine !== null ? preData.femmine : "";
+        row.querySelector('.input-altro').value = preData.altro !== null ? preData.altro : "";
         if (preData.classi) {
             const classiSelezionate = preData.classi.split(',').map(s => s.trim());
             row.querySelectorAll('.btn-classe').forEach(btn => {
@@ -350,6 +352,7 @@
          b.querySelector('.input-tot').name = `scuole[${idx}][indirizzi][${i}][tot]`;
          b.querySelector('.input-maschi').name = `scuole[${idx}][indirizzi][${i}][maschi]`;
          b.querySelector('.input-femmine').name = `scuole[${idx}][indirizzi][${i}][femmine]`;
+         b.querySelector('.input-altro').name = `scuole[${idx}][indirizzi][${i}][altro]`;
          updateHiddenClassi(b);
      });
   }
@@ -464,10 +467,60 @@
   }
 
   document.getElementById('attivita-form').addEventListener('submit', function(e) {
+      let isValid = true;
 
+      const di = document.getElementById('data_inizio');
+      const df = document.getElementById('data_fine');
+      const dateError = document.getElementById('date-error');
+      if (di.value && df.value && new Date(di.value) > new Date(df.value)) {
+          isValid = false;
+          di.style.borderColor = '#d32f2f';
+          df.style.borderColor = '#d32f2f';
+          dateError.classList.add('error-visible');
+      } else {
+          di.style.borderColor = '';
+          df.style.borderColor = '';
+          dateError.classList.remove('error-visible');
+      }
+
+      document.querySelectorAll('.indirizzo-block').forEach(block => {
+          const selectIndirizzo = block.querySelector('.indirizzo-select');
+          if (!selectIndirizzo.value) return;
+
+          const totStr = block.querySelector('.input-tot').value.trim();
+          const masStr = block.querySelector('.input-maschi').value.trim();
+          const femStr = block.querySelector('.input-femmine').value.trim();
+          const altStr = block.querySelector('.input-altro').value.trim();
+          const errorDiv = block.querySelector('.error-message');
+
+          const tot = parseInt(totStr) || 0;
+          const mas = parseInt(masStr) || 0;
+          const fem = parseInt(femStr) || 0;
+          const alt = parseInt(altStr) || 0;
+
+          errorDiv.classList.remove('error-visible');
+
+          const isSpecializing = (masStr !== "" || femStr !== "" || altStr !== "");
+
+          if (isSpecializing) {
+              if (masStr === "" || femStr === "" || altStr === "") {
+                  isValid = false;
+                  errorDiv.textContent = "Se specializzi il genere, devi compilare Maschi, Femmine e Altro.";
+                  errorDiv.classList.add('error-visible');
+              } else if ((mas + fem + alt) !== tot) {
+                  isValid = false;
+                  errorDiv.textContent = `La somma (${mas + fem + alt}) deve essere uguale al totale (${tot}).`;
+                  errorDiv.classList.add('error-visible');
+              }
+          }
+      });
+
+      if (!isValid) {
+          e.preventDefault();
+          const firstError = document.querySelector('.error-message.error-visible');
+          if (firstError) firstError.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }
   });
-
-
 
   const MODALITA = "{{ modalita }}";
   const FORM_STORAGE_KEY = `formAttivitaData_${MODALITA === 'modifica' ? '{{ attivita.id }}' : 'new'}`;
@@ -491,9 +544,7 @@
   function loadFormState() {
       const dataString = localStorage.getItem(FORM_STORAGE_KEY);
       if (!dataString) return;
-
       const data = JSON.parse(dataString);
-
       mainForm.querySelector('[name="titolo"]').value = data.titolo || '';
       mainForm.querySelector('[name="descrizione"]').value = data.descrizione || '';
       mainForm.querySelector('[name="data_inizio"]').value = data.data_inizio || '';
@@ -509,7 +560,6 @@
       } else {
           addSupervisore(null, true);
       }
-
       const colContainer = document.getElementById('collaboratori-container');
       colContainer.querySelectorAll('.dynamic-row').forEach(row => row.remove());
       if (data.collaboratori && data.collaboratori.length > 0) {
@@ -517,7 +567,6 @@
       } else {
           addCollaboratore(null, true);
       }
-
       localStorage.removeItem(FORM_STORAGE_KEY);
   }
 
@@ -546,13 +595,13 @@
           }
       }
       updateMutualExclusion();
-
       document.addEventListener('click', e => {
           if (e.target.matches('[data-save-form="true"]')) {
               saveFormState();
           }
       });
   });
-
 </script>
 {% endblock %}
+</body>
+</html>

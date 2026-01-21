@@ -20,7 +20,7 @@ from database.models import (
 )
 
 app = Flask(__name__)
-# IN PRODUZIONE: usaew una chiave sicura da variabile d'ambiente
+# Usare una chiave sicura da variabile d'ambiente
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'CHIAVE_SEGRETA_DI_SVILUPPO')
 app.permanent_session_lifetime = timedelta(minutes=30)
 
@@ -48,7 +48,6 @@ def login_required(f):
 # ==============================================================================
 
 def parse_partecipanti_form(form_data):
-    """Estrae e struttura i dati complessi delle scuole e indirizzi dal form HTML."""
     partecipanti = []
     temp_data = {}
     scuole_map = {}
@@ -60,37 +59,27 @@ def parse_partecipanti_form(form_data):
         if match_s:
             scuole_map[int(match_s.group(1))] = values[0]
             continue
-
         match_i = regex_indirizzo.match(key)
         if match_i:
             idx_s, idx_i, field = int(match_i.group(1)), int(match_i.group(2)), match_i.group(3)
-            if idx_s not in temp_data:
-                temp_data[idx_s] = {}
-            if idx_i not in temp_data[idx_s]:
-                temp_data[idx_s][idx_i] = {}
-
-            if field == 'classi':
-                temp_data[idx_s][idx_i][field] = ", ".join(values)
-            else:
-                temp_data[idx_s][idx_i][field] = values[0] if values else None
+            if idx_s not in temp_data: temp_data[idx_s] = {}
+            if idx_i not in temp_data[idx_s]: temp_data[idx_s][idx_i] = {}
+            if field == 'classi': temp_data[idx_s][idx_i][field] = ", ".join(values)
+            else: temp_data[idx_s][idx_i][field] = values[0] if values else None
 
     for idx_s, indirizzi in temp_data.items():
         cm = scuole_map.get(idx_s)
-        if not cm:
-            continue
+        if not cm: continue
         for dati in indirizzi.values():
-            if not dati.get('id'):
-                continue
-
-            def to_int_or_none(val):
-                return int(val) if val and val.strip() else None
-
+            if not dati.get('id'): continue
+            def to_int_or_none(val): return int(val) if val and val.strip() else None
             partecipanti.append({
                 'codice_meccanografico': cm,
                 'indirizzo': dati.get('id'),
                 'totale_studenti': to_int_or_none(dati.get('tot')),
                 'totale_maschi': to_int_or_none(dati.get('maschi')),
                 'totale_femmine': to_int_or_none(dati.get('femmine')),
+                'altro': to_int_or_none(dati.get('altro')),
                 'classi': dati.get('classi') or None
             })
     return partecipanti
@@ -133,7 +122,7 @@ def salva_attivita_db(session_db, form_data, attivita_esistente=None):
 
         session_db.commit()
         return True, None
-    except IntegrityError as e:
+    except IntegrityError:
         session_db.rollback()
         return False, "Errore di integrità nel database."
     except Exception as e:
@@ -272,7 +261,7 @@ def modifica_attivita(id_attivita):
     session_db = Database().get_session()
     attivita = session_db.query(AttivitaOrientamento).get(id_attivita)
     if not attivita: return "Attività non trovata", 404
-    if session['ruolo'] != 'admin' and attivita.struttura_organizzante != session['struttura']:
+    if session['ruolo'] != 'Ufficio Orientamento' and attivita.struttura_organizzante != session['struttura']:
         return "Non hai i permessi per modificare questa attività", 403
 
     if request.method == 'POST':
@@ -294,7 +283,7 @@ def modifica_attivita(id_attivita):
         if p.codice_meccanografico not in part_map: part_map[p.codice_meccanografico] = []
         part_map[p.codice_meccanografico].append(
             {'indirizzo': p.indirizzo, 'tot': p.totale_studenti, 'maschi': p.totale_maschi,
-             'femmine': p.totale_femmine, 'classi': p.classi})
+             'femmine': p.totale_femmine, 'altro': p.altro, 'classi': p.classi})
     p_opt, strutture, s_opt = get_common_options(session_db)
     return render_template('form_attivita.html', modalita='modifica', attivita=dati_attivita,
                            scuole_preload=[{'id_scuola': cm, 'indirizzi': inds} for cm, inds in part_map.items()],
@@ -309,7 +298,7 @@ def cancella_attivita(id_attivita):
 
     if not attivita:
         return jsonify({'success': False, 'error': 'Attività non trovata'}), 404
-    if session['ruolo'] != 'admin' and attivita.struttura_organizzante != session['struttura']:
+    if session['ruolo'] != 'Ufficio Orientamento' and attivita.struttura_organizzante != session['struttura']:
         return jsonify({'success': False, 'error': 'Non hai i permessi per cancellare questa attività'}), 403
 
     try:
@@ -381,7 +370,7 @@ def indirizzi_scolastici():
 @login_required
 def inserisci_personale():
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     error = None
@@ -434,7 +423,7 @@ def inserisci_personale():
 @login_required
 def modifica_personale(email):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     personale = session_db.query(PersonaleUniversitario).get(email)
@@ -475,7 +464,7 @@ def modifica_personale(email):
 @login_required
 def cancella_personale(email):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
 
     personale = session_db.query(PersonaleUniversitario).get(email)
@@ -486,7 +475,7 @@ def cancella_personale(email):
         session_db.delete(personale)
         session_db.commit()
         return jsonify({'success': True})
-    except IntegrityError as e:
+    except IntegrityError:
         session_db.rollback()
         return jsonify(
             {'success': False, 'error': 'Impossibile cancellare: questo utente è referenziato in altre tabelle.'}), 400
@@ -501,7 +490,7 @@ def cancella_personale(email):
 @login_required
 def inserisci_scuola():
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     error = None
@@ -564,7 +553,7 @@ def inserisci_scuola():
 @login_required
 def modifica_scuola(cm):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     scuola = session_db.query(Scuola).get(cm)
@@ -624,7 +613,7 @@ def modifica_scuola(cm):
 @login_required
 def cancella_scuola(cm):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
 
     scuola = session_db.query(Scuola).get(cm)
@@ -635,7 +624,7 @@ def cancella_scuola(cm):
         session_db.delete(scuola)
         session_db.commit()
         return jsonify({'success': True})
-    except IntegrityError as e:
+    except IntegrityError:
         session_db.rollback()
         return jsonify(
             {'success': False, 'error': 'Impossibile cancellare. Verifica che non ci siano riferimenti pendenti.'}), 400
@@ -650,7 +639,7 @@ def cancella_scuola(cm):
 @login_required
 def inserisci_indirizzo():
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     error = None
@@ -706,7 +695,7 @@ def inserisci_indirizzo():
 @login_required
 def modifica_indirizzo(cm, indirizzo):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return "Non autorizzato", 403
 
     pk = (cm, indirizzo)
@@ -760,7 +749,7 @@ def modifica_indirizzo(cm, indirizzo):
 @login_required
 def cancella_indirizzo(cm, indirizzo):
     session_db = Database().get_session()
-    if session.get('ruolo') != 'admin' and session.get('struttura') == 'Ateneo di Verona':
+    if session.get('ruolo') != 'Ufficio Orientamento' and session.get('struttura') == 'Ateneo di Verona':
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
 
     pk = (cm, indirizzo)
@@ -773,7 +762,7 @@ def cancella_indirizzo(cm, indirizzo):
         session_db.delete(indirizzo_data)
         session_db.commit()
         return jsonify({'success': True})
-    except IntegrityError as e:
+    except IntegrityError:
         session_db.rollback()
         return jsonify(
             {'success': False, 'error': 'Impossibile cancellare: questo indirizzo è referenziato nelle attività.'}), 400
@@ -782,12 +771,12 @@ def cancella_indirizzo(cm, indirizzo):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-# --- CRUD REFERENTI (UTENTI APP - SOLO ADMIN) ---
+# --- CRUD REFERENTI (UTENTI APP - SOLO UFFICIO ORIENTAMENTO) ---
 
 @app.route('/referenti')
 @login_required
 def lista_referenti():
-    if session.get('ruolo') != 'admin':
+    if session.get('ruolo') != 'Ufficio Orientamento':
         return "Accesso Negato", 403
 
     session_db = Database().get_session()
@@ -799,7 +788,7 @@ def lista_referenti():
 @app.route('/referenti/inserisci', methods=['GET', 'POST'])
 @login_required
 def inserisci_referente():
-    if session.get('ruolo') != 'admin':
+    if session.get('ruolo') != 'Ufficio Orientamento':
         return "Accesso Negato", 403
 
     session_db = Database().get_session()
@@ -860,33 +849,34 @@ def inserisci_referente():
 @app.route('/referenti/modifica/<string:email>', methods=['GET', 'POST'])
 @login_required
 def modifica_referente(email):
-    if session.get('ruolo') != 'admin':
+    if session.get('ruolo') != 'Ufficio Orientamento':
         return "Accesso Negato", 403
 
     session_db = Database().get_session()
-    referente = session_db.query(UtenteApplicazione).options(joinedload(UtenteApplicazione.informazioni_personali)).get(
-        email)
+    referente = session_db.query(UtenteApplicazione).options(joinedload(UtenteApplicazione.informazioni_personali)).get(email)
 
     if not referente:
         return "Referente non trovato", 404
 
+    is_self = (email == session.get('user'))
     error = None
 
     if request.method == 'POST':
         try:
-            nome = request.form['nome']
-            cognome = request.form['cognome']
-            ruolo = request.form['ruolo']
-            struttura_afferita = request.form['struttura_afferita']
-            new_password = request.form['password']
+            if not is_self:
+                nome = request.form['nome']
+                cognome = request.form['cognome']
+                ruolo = request.form['ruolo']
+                struttura_afferita = request.form['struttura_afferita']
 
-            if referente.informazioni_personali:
-                referente.informazioni_personali.nome = nome
-                referente.informazioni_personali.cognome = cognome
+                if referente.informazioni_personali:
+                    referente.informazioni_personali.nome = nome
+                    referente.informazioni_personali.cognome = cognome
 
-            referente.ruolo = ruolo
-            referente.struttura_afferita = struttura_afferita
+                referente.ruolo = ruolo
+                referente.struttura_afferita = struttura_afferita
 
+            new_password = request.form.get('password')
             if new_password and new_password.strip():
                 hashed_pw = hashpw(new_password.encode('utf-8'), gensalt()).decode('utf-8')
                 referente.password = hashed_pw
@@ -904,13 +894,14 @@ def modifica_referente(email):
                            referente=referente,
                            strutture=strutture,
                            error=error,
+                           is_self=is_self,
                            struttura=session.get('struttura'))
 
 
 @app.route('/referenti/cancella/<string:email>', methods=['POST'])
 @login_required
 def cancella_referente(email):
-    if session.get('ruolo') != 'admin':
+    if session.get('ruolo') != 'Ufficio Orientamento':
         return jsonify({'success': False, 'error': 'Non autorizzato'}), 403
 
     session_db = Database().get_session()
@@ -931,7 +922,7 @@ def cancella_referente(email):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
-# --- ROTTA RESOCONTO ATTIVITA' (DETTAGLIO) E EXPORT ---
+# --- ROTTE RESOCONTO ATTIVITA' (DETTAGLIO) E EXPORT ---
 
 @app.route('/resoconto_attivita/<int:id_attivita>')
 @login_required
@@ -979,8 +970,7 @@ def resoconto_attivita(id_attivita):
 
     nomi_scuole = [s.nome for s in q_scuole]
     counts_nomi = Counter(nomi_scuole)
-    chart_scuole_labels = [f"{s.nome} - {s.codice_meccanografico}" if counts_nomi[s.nome] > 1 else s.nome for s in
-                           q_scuole]
+    chart_scuole_labels = [f"{s.nome} - {s.codice_meccanografico}" if counts_nomi[s.nome] > 1 else s.nome for s in q_scuole]
     chart_scuole_data = [s.totale for s in q_scuole]
 
     q_indirizzi = base_query.join(IndirizzoScolastico).with_entities(
@@ -1001,10 +991,10 @@ def resoconto_attivita(id_attivita):
     tot_studenti = q_sesso[0] or 0
     tot_m = q_sesso[1] or 0
     tot_f = q_sesso[2] or 0
-    tot_non_spec = tot_studenti - (tot_m + tot_f)
+    tot_altro = tot_studenti - (tot_m + tot_f)
 
-    chart_sesso_labels = ['Maschi', 'Femmine', 'Non Spec.']
-    chart_sesso_data = [tot_m, tot_f, tot_non_spec]
+    chart_sesso_labels = ['Maschi', 'Femmine', 'Altro']
+    chart_sesso_data = [tot_m, tot_f, tot_altro]
 
     dati_disponibili = tot_studenti > 0
 
@@ -1023,7 +1013,8 @@ def resoconto_attivita(id_attivita):
                            struttura=session.get('struttura'),
                            tot_studenti=tot_studenti,
                            tot_m=tot_m,
-                           tot_f=tot_f)
+                           tot_f=tot_f,
+                           tot_altro=tot_altro)
 
 
 @app.route('/export/report.csv')
@@ -1050,7 +1041,8 @@ def export_report():
     header = [
         'ID Attivita', 'Nome Attivita', 'Data Inizio', 'Data Fine', 'Descrizione', 'Totale Ore',
         'Dipartimento Organizzante', 'Dipartimenti Collaboranti', 'Docente Referente', 'Docenti Supervisori',
-        'Scuola Codice', 'Scuola Nome', 'Indirizzo', 'Classi', 'Totale Studenti', 'Totale Maschi', 'Totale Femmine'
+        'Scuola Codice', 'Scuola Nome', 'Indirizzo', 'Classi', 'Totale Studenti', 'Totale Maschi', 'Totale Femmine',
+        'Altro'
     ]
     writer.writerow(header)
 
@@ -1065,15 +1057,19 @@ def export_report():
         ]
 
         if not a.partecipazioni:
-            writer.writerow(base_row + [''] * 7)
+            writer.writerow(base_row + [''] * 8)
         else:
             for p in a.partecipazioni:
                 scuola_codice = p.codice_meccanografico
                 scuola_nome = p.indirizzi.scuola.nome if p.indirizzi and p.indirizzi.scuola else 'N/D'
 
+                m = p.totale_maschi or 0
+                f = p.totale_femmine or 0
+                alt = p.totale_studenti - (m + f)
+
                 partecipazione_row = [
                     scuola_codice, scuola_nome, p.indirizzo, p.classi,
-                    p.totale_studenti, p.totale_maschi, p.totale_femmine
+                    p.totale_studenti, m, f, alt
                 ]
                 writer.writerow(base_row + partecipazione_row)
 
@@ -1135,7 +1131,6 @@ def resoconto():
     kpi_indirizzi = partecipazioni_q.join(IndirizzoScolastico).with_entities(
         func.count(func.distinct(IndirizzoScolastico.indirizzo))).scalar() or 0
 
-
     q_scuole = partecipazioni_q.join(IndirizzoScolastico).join(Scuola).with_entities(
         Scuola.nome,
         func.sum(func.coalesce(Partecipa.totale_maschi, 0)),
@@ -1148,7 +1143,7 @@ def resoconto():
         'labels': [s[0] for s in q_scuole],
         'maschi': [s[1] for s in q_scuole],
         'femmine': [s[2] for s in q_scuole],
-        'nonspec': [(s[3] - (s[1] + s[2])) for s in q_scuole],
+        'altro': [(s[3] - (s[1] + s[2])) for s in q_scuole],
         'attivita': [s[4] for s in q_scuole]
     }
 
@@ -1164,12 +1159,12 @@ def resoconto():
         'labels': [i[0] for i in q_indirizzi],
         'maschi': [i[1] for i in q_indirizzi],
         'femmine': [i[2] for i in q_indirizzi],
-        'nonspec': [(i[3] - (i[1] + i[2])) for i in q_indirizzi],
+        'altro': [(i[3] - (i[1] + i[2])) for i in q_indirizzi],
         'attivita': [i[4] for i in q_indirizzi]
     }
 
     all_attivita = base_query.order_by(AttivitaOrientamento.data_inizio).all()
-    trend_data = defaultdict(lambda: {'studenti': 0, 'm': 0, 'f': 0, 'ns': 0, 'attivita': 0})
+    trend_data = defaultdict(lambda: {'studenti': 0, 'm': 0, 'f': 0, 'alt': 0, 'attivita': 0})
 
     all_ids = [a.id_attivita for a in all_attivita]
     part_data = {}
@@ -1182,10 +1177,8 @@ def resoconto():
         ).filter(Partecipa.id_attivita.in_(all_ids)).group_by(Partecipa.id_attivita).all()
 
         for row in q_part:
-            t = row[1] or 0
-            m = row[2] or 0
-            f = row[3] or 0
-            part_data[row[0]] = {'tot': t, 'm': m, 'f': f, 'ns': t - (m + f)}
+            t, m, f = row[1] or 0, row[2] or 0, row[3] or 0
+            part_data[row[0]] = {'tot': t, 'm': m, 'f': f, 'alt': t - (m + f)}
 
     for att in all_attivita:
         k = att.data_inizio.strftime('%Y-%m')
@@ -1195,7 +1188,7 @@ def resoconto():
             trend_data[k]['studenti'] += d['tot']
             trend_data[k]['m'] += d['m']
             trend_data[k]['f'] += d['f']
-            trend_data[k]['ns'] += d['ns']
+            trend_data[k]['alt'] += d['alt']
 
     sorted_keys = sorted(trend_data.keys())
 
@@ -1205,18 +1198,18 @@ def resoconto():
         'studenti': [trend_data[k]['studenti'] for k in sorted_keys],
         'maschi': [trend_data[k]['m'] for k in sorted_keys],
         'femmine': [trend_data[k]['f'] for k in sorted_keys],
-        'nonspec': [trend_data[k]['ns'] for k in sorted_keys]
+        'altro': [trend_data[k]['alt'] for k in sorted_keys]
     }
 
-    # -- GENERE
     q_tot_sesso = partecipazioni_q.with_entities(
         func.sum(func.coalesce(Partecipa.totale_studenti, 0)),
         func.sum(func.coalesce(Partecipa.totale_maschi, 0)),
         func.sum(func.coalesce(Partecipa.totale_femmine, 0))
     ).first()
     ts, tm, tf = q_tot_sesso[0] or 0, q_tot_sesso[1] or 0, q_tot_sesso[2] or 0
+
     chart_sesso_data = [tm, tf, ts - (tm + tf)]
-    chart_sesso_labels = ['Maschi', 'Femmine', 'Non Spec.']
+    chart_sesso_labels = ['Maschi', 'Femmine', 'Altro']
 
     available_years = session_db.query(distinct(extract('year', AttivitaOrientamento.data_inizio))) \
         .order_by(extract('year', AttivitaOrientamento.data_inizio).desc()).all()
@@ -1238,7 +1231,7 @@ def resoconto():
             'labels': [r[0] for r in q_comp_stud],
             'maschi': [r[1] or 0 for r in q_comp_stud],
             'femmine': [r[2] or 0 for r in q_comp_stud],
-            'nonspec': [((r[3] or 0) - ((r[1] or 0) + (r[2] or 0))) for r in q_comp_stud]
+            'altro': [((r[3] or 0) - ((r[1] or 0) + (r[2] or 0))) for r in q_comp_stud]
         }
 
         q_comp_att = session_db.query(
@@ -1316,7 +1309,7 @@ def api_confronta_edizioni():
         'values': [d[2] or 0 for d in data],
         'maschi': [d[3] for d in data],
         'femmine': [d[4] for d in data],
-        'nonspec': [(d[2] or 0) - (d[3] + d[4]) for d in data]
+        'altro': [(d[2] or 0) - (d[3] + d[4]) for d in data]
     })
 
 

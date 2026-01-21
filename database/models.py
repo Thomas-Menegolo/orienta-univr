@@ -109,13 +109,11 @@ class Partecipa(Base):
     codice_meccanografico = Column(String(16), primary_key=True)
     indirizzo = Column(String(64), primary_key=True)
 
-    totale_studenti = Column(Integer, CheckConstraint("totale_studenti > 0"))
+    totale_studenti = Column(Integer, CheckConstraint("totale_studenti > 0"), CheckConstraint("totale_studenti = totale_maschi + totale_femmine + altro"))
     totale_maschi = Column(Integer, CheckConstraint("totale_maschi > 0"))
     totale_femmine = Column(Integer, CheckConstraint("totale_femmine > 0"))
-
-    # --- MODIFICA AGGIUNTA ---
     classi = Column(String(32), nullable=True)
-    # --- FINE MODIFICA ---
+    altro = Column(Integer, CheckConstraint("altro > 0"))
 
     __table_args__ = (
         ForeignKeyConstraint(

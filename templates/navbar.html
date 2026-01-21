@@ -20,10 +20,10 @@
         <div class="nav-links-container">
             <a href="{{ url_for('attivita') }}" class="{{ 'active' if request.endpoint == 'attivita' else '' }}">Attività</a>
         
-            {% if session.get('ruolo') == 'admin' %}
+            {% if session.get('ruolo') == 'Ufficio Orientamento' %}
             <a href="{{ url_for('lista_referenti') }}" class="{{ 'active' if request.endpoint == 'lista_referenti' else '' }}">Referenti</a>
             {% endif %}
-            {% if struttura != "Ateneo di Verona" or session.get('ruolo') == 'admin' %}
+            {% if struttura != "Ateneo di Verona" or session.get('ruolo') == 'Ufficio Orientamento' %}
             <a href="{{ url_for('personale_universitario') }}" class="{{ 'active' if request.endpoint == 'personale_universitario' else '' }}">Personale</a>
             <a href="{{ url_for('scuole') }}" class="{{ 'active' if request.endpoint == 'scuole' else '' }}">Scuole</a>
             <a href="{{ url_for('indirizzi_scolastici') }}" class="{{ 'active' if request.endpoint == 'indirizzi_scolastici' else '' }}">Indirizzi</a>

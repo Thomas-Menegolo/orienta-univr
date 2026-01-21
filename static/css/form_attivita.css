@@ -1,3 +1,4 @@
+/* --- RESET & BASE --- */
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background-color: #f7f7f7;
@@ -7,7 +8,7 @@ body {
 }
 
 .page-container {
-  max-width: 800px;
+  max-width: 950px; /* Allargato per ospitare i 4 campi genere + classi */
   margin: 0 auto;
   background-color: white;
   padding: 30px;
@@ -15,6 +16,7 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
 }
 
+/* --- HEADER --- */
 .form-header {
   position: relative;
   display: flex;
@@ -47,6 +49,7 @@ body {
 }
 .back-btn:hover { background-color: #dcedc8; }
 
+/* --- SEZIONI --- */
 .form-section {
   margin-bottom: 35px;
 }
@@ -59,21 +62,19 @@ body {
   padding-left: 10px;
 }
 
-
 .section-header-shortcuts {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
 }
-.section-header-shortcuts h3 {
-    margin-bottom: 0;
-}
+
 .shortcut-group {
     display: flex;
     gap: 8px;
 }
 
+/* --- FORM LAYOUT --- */
 .form-row {
   display: flex;
   gap: 20px;
@@ -104,13 +105,7 @@ label {
   font-weight: normal;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="email"],
-input[type="tel"],
-textarea,
-select {
+input, textarea, select {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -120,24 +115,13 @@ select {
   box-sizing: border-box;
 }
 
-input:focus,
-input[type="tel"]:focus,
-select:focus,
-textarea:focus {
+input:focus, select:focus, textarea:focus {
   border-color: #1b5e20;
   outline: none;
   box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.1);
 }
 
-select[multiple] {
-    padding: 5px;
-    height: 100px;
-    background-color: white;
-}
-
-textarea { resize: vertical; }
-
-
+/* --- DYNAMIC ROWS --- */
 .dynamic-row {
   display: flex;
   gap: 10px;
@@ -149,39 +133,25 @@ textarea { resize: vertical; }
   display: flex;
   gap: 5px;
   min-width: 70px;
-  justify-content: flex-start;
   align-items: center;
   padding-bottom: 2px;
 }
 
 .btn-add, .btn-remove {
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 32px; height: 32px;
+  border: none; border-radius: 6px;
+  font-size: 1.2rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.2s;
   line-height: 1;
-  padding-bottom: 3px;
 }
 
-.btn-add {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  font-weight: bold;
-}
+.btn-add { background-color: #e8f5e9; color: #2e7d32; font-weight: bold; }
 .btn-add:hover { background-color: #c8e6c9; }
-
-.btn-remove {
-  background-color: #ffebee;
-  color: #c62828;
-}
+.btn-remove { background-color: #ffebee; color: #c62828; }
 .btn-remove:hover { background-color: #ffcdd2; }
 
+/* --- BLOCCHI SCUOLA/INDIRIZZO --- */
 .scuola-block {
   background-color: #f9fbe7;
   border: 1px solid #dcedc8;
@@ -197,52 +167,51 @@ textarea { resize: vertical; }
     align-items: flex-end;
 }
 
-.header-actions {
-    padding-bottom: 2px;
-}
-
 .btn-remove-scuola {
     background-color: #ffebee;
     color: #c62828;
     border: 2px dashed #c62828;
     border-radius: 6px;
     padding: 8px 12px;
-    font-size: 0.9rem;
-    font-weight: bold;
+    font-size: 0.9rem; font-weight: bold;
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
-}
-.btn-remove-scuola:hover {
-    background-color: #ffcdd2;
 }
 
 .indirizzo-block {
     background-color: white;
     border: 1px dashed #ccc;
     border-radius: 6px;
-    padding: 10px;
+    padding: 15px;
     margin-bottom: 10px;
 }
 
 .studenti-row {
     display: flex;
-    gap: 15px;
-    margin-top: 8px;
-    padding-left: 10px;
+    gap: 12px;
+    margin-top: 12px;
+    padding-left: 5px;
+    flex-wrap: wrap;
+    align-items: flex-start;
 }
 
 .studenti-row .form-group {
-    flex: 1;
+    flex: 1 1 70px;
+    min-width: 70px;
 }
 
-.mt-medium { margin-top: 25px; }
-.sub-divider {
-    border: 0;
-    border-top: 1px solid #eee;
-    margin: 25px 0;
+/* --- CLASSI TOGGLE --- */
+.form-group-classi { flex: 3 !important; min-width: 200px; }
+.classi-toggle-container { display: flex; gap: 4px; flex-wrap: wrap; height: 38px; align-items: center; }
+.btn-classe {
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    border: 1px solid #ccc; background-color: #f7f7f7; color: #555;
+    border-radius: 6px; padding: 6px 8px; cursor: pointer;
 }
+.btn-classe.selected { background-color: #1b5e20; color: white; border-color: #1b5e20; }
+.classi-hidden-inputs { display: none; }
 
+/* --- PULSANTI GRANDI --- */
 .btn-add-big {
     width: 100%;
     padding: 12px;
@@ -250,9 +219,10 @@ textarea { resize: vertical; }
     color: #1b5e20;
     border: 2px dashed #1b5e20;
     border-radius: 8px;
-    font-weight: bold;
+    font-weight: bold; font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s;
+    margin-top: 10px;
 }
 .btn-add-big:hover { background-color: #dcedc8; }
 
@@ -269,6 +239,7 @@ textarea { resize: vertical; }
     border: none;
     border-radius: 8px;
     cursor: pointer;
+    font-weight: bold;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     transition: transform 0.2s, background-color 0.2s;
 }
@@ -277,6 +248,7 @@ textarea { resize: vertical; }
     transform: translateY(-2px);
 }
 
+/* --- HELPERS & ERRORI --- */
 .hidden-visibility {
     visibility: hidden;
     pointer-events: none;
@@ -285,151 +257,25 @@ textarea { resize: vertical; }
 .error-message {
     display: none;
     color: #d32f2f;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin-top: 8px;
     padding: 8px 12px;
     background-color: #ffebee;
     border-radius: 4px;
     border-left: 4px solid #d32f2f;
 }
-
-.error-visible {
-    display: block;
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.form-group-classi {
-  flex: 2;
-  min-width: 200px;
-}
-.classi-toggle-container {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  height: 38px;
-  align-items: center;
-}
-.btn-classe {
-  font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: 1px solid #ccc;
-  background-color: #f7f7f7;
-  color: #555;
-  border-radius: 6px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-classe:hover:not(:disabled) {
-  border-color: #888;
-  background-color: #f0f0f0;
-}
-.btn-classe:disabled {
-  background-color: #f1f1f1;
-  color: #aaa;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-.btn-classe.selected {
-  background-color: #1b5e20;
-  color: white;
-  border-color: #1b5e20;
-}
-.classi-hidden-inputs {
-  display: none;
-}
-
-@media (max-width: 768px) {
-    .page-container { padding: 15px; }
-    .form-header { flex-direction: column; gap: 15px; align-items: flex-start; }
-    .back-btn { position: static; transform: none; }
-    .form-header h2 { width: 100%; text-align: center; }
-    .form-row, .studenti-row { flex-direction: column; }
-    .form-group.half { flex: 1 1 100%; }
-    .classi-toggle-container { height: auto; padding-bottom: 5px; }
-}
-
-
-.label-with-shortcut {
-    display: block;
-}
+.error-visible { display: block; animation: fadeIn 0.3s ease-in; }
 
 .btn-shortcut {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #1b5e20;
-    background-color: #e8f5e9;
-    border: 1px dashed #1b5e20;
-    padding: 3px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    margin-left: 10px;
-    vertical-align: middle;
-}
-.btn-shortcut:hover {
-    background-color: #c8e6c9;
-    text-decoration: none;
+    font-size: 0.8rem; font-weight: 600;
+    color: #1b5e20; background-color: #e8f5e9;
+    border: 1px dashed #1b5e20; padding: 3px 8px;
+    border-radius: 4px; text-decoration: none;
 }
 
-.modal-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    z-index: 100;
-    align-items: center;
-    justify-content: center;
-}
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
-.modal-content {
-    background-color: white;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-    position: relative;
-    max-width: 90%;
-    width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modal-content .page-container {
-    box-shadow: none;
-    margin: 0;
-    max-width: 100%;
-    padding: 20px;
-}
-
-.modal-close-btn {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #aaa;
-    cursor: pointer;
-    z-index: 110;
-    line-height: 1;
-}
-.modal-close-btn:hover {
-    color: #333;
-}
-
-
-.iti {
-  width: 100%;
-}
-.iti__input {
-    width: 100% !important;
+@media (max-width: 768px) {
+    .studenti-row { flex-direction: column; }
+    .form-group-classi { flex: 1 !important; }
 }
